@@ -1,0 +1,66 @@
+# Refined quad meshes
+
+```python exec="on" session="concepts"
+import sys
+
+sys.path.insert(0, "docs/snippets")
+from plot_mesh import svg_row
+from shapely import box
+
+from refined_quads import generate
+```
+
+A **refined quad mesh** is a 2D mesh of axis-aligned squares on a fixed lattice, locally
+refined by repeated halving, with triangles only where cell sizes change.
+
+## Base cell, refinement level and lattice
+
+The **base cell** is the coarsest square; its size is any positive length, for example
+32 m or 25 m. Each **refinement level** halves it once: level 0 is the base cell, level
+`L` has side `cell size / 2**L`. A 25 m base cell gives 12.5, 6.25 and 3.125 m cells at
+levels 1 to 3.
+
+The **lattice** is the fixed grid of points on which every square has its corners: an
+origin and the base cell. By default the origin is the lower-left corner of the domain
+rounded down to a multiple of the base cell, so meshes with the same base cell line up.
+Internally every corner is an integer index on the finest level of the lattice, so
+coordinates are computed once, as `origin + index * unit`, and comparisons are exact.
+
+A **lattice square** is a square of the quadtree: a base cell or one of the squares its
+halving gives. It becomes one square cell, or is filled by transition cells.
+
+## Transition rows and transition cells
+
+Around a refinement area the mesh does not jump from fine to coarse at once. **Transition
+rows** set, per step from coarse to fine, how many rows of finer cells surround the
+finer area before the mesh coarsens:
+
+```python exec="on" html="on" session="concepts"
+area = box(155_100, 463_100, 155_140, 463_140)
+panels = []
+for rows in ([1, 1], [2, 2]):
+    mesh = generate(
+        box(155_000, 463_000, 155_256, 463_256),
+        cell_size=32.0,
+        refinement_areas=[(area, 2)],
+        transition_rows=rows,
+        crs="EPSG:28992",
+    )
+    panels.append((mesh, {"areas": [area], "title": f"transition_rows={rows}"}))
+print(svg_row(panels))
+```
+
+Neighbouring lattice squares differ at most one level (**2:1 balance**). Where a finer
+square meets a coarser one, the coarser square gets a node in the middle of that side
+and is split into **transition cells**: one split side gives a fan of three triangles,
+two adjacent split sides four triangles, and two opposite or three or four split sides
+four squares around the centre. Together they fill the lattice square exactly, so there
+are no hanging nodes (nodes in the middle of another cell's edge).
+
+## Domain and water
+
+The **domain** encloses the mesh. A lattice square that overlaps it is kept whole, so the
+outer edge follows the lattice rather than the polygon exactly. **Water areas** and holes
+in the domain are clipped out of the finished mesh cell by cell (see
+[Water areas](../how-to/water-areas.md)); after that some lattice squares are filled only
+partly, which is how the remaining cells follow the water's edge.

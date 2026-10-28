@@ -1,0 +1,80 @@
+# Water areas
+
+Water areas are where the 1D network carries the flow, so no 2D cells are kept there.
+Typically you refine along a watercourse and then cut the watercourse out: the small
+cells that remain follow its edge as closely as possible.
+
+```python exec="on" session="water"
+import sys
+
+sys.path.insert(0, "docs/snippets")
+from plot_mesh import svg_row
+from shapely import box
+from shapely.affinity import rotate
+
+from refined_quads import generate
+
+domain = box(155_000, 463_000, 155_320, 463_240)
+river = rotate(box(155_000, 463_105, 155_320, 463_135), 12, origin="centroid")
+```
+
+## Cut out cell by cell
+
+`generate` first makes the whole mesh and then removes cells with MeshKernel, exactly as
+the model-building workflow does (hydrolib's `mesh2d_clip`): the water polygons are
+merged, each part is clipped with MeshKernel's mesh deletion, and hanging edges are
+removed. The **water removal rule** decides which cells go:
+
+| Rule | A cell is removed when | MeshKernel option |
+| --- | --- | --- |
+| `"centre"` (default) | its circumcentre (triangle) or centroid lies in water | `FACES_WITH_INCLUDED_CIRCUMCENTERS` |
+| `"inside"` | it lies completely in water | `INSIDE_NOT_INTERSECTED` |
+| `"touches"` | it touches water | `INSIDE_AND_INTERSECTED` |
+
+```python exec="on" source="above" session="water"
+meshes = {
+    rule: generate(
+        domain,
+        cell_size=16.0,
+        refinement_areas=[(river.buffer(10), 2)],
+        transition_rows=1,
+        water_areas=[river],
+        water_removal=rule,
+        crs="EPSG:28992",
+    )
+    for rule in ("centre", "inside", "touches")
+}
+```
+
+```python exec="on" html="on" session="water"
+print(
+    svg_row(
+        [
+            (m, {"water": [river], "title": f'"{rule}": {len(m.faces)} cells'})
+            for rule, m in meshes.items()
+        ]
+    )
+)
+```
+
+!!! note "What MeshKernel does"
+    MeshKernel keeps nodes and edges and derives the cells from them again. A single
+    removed cell whose edges all stay (its neighbours all remain) therefore comes back,
+    and a hole of three or four nodes becomes a cell again. That is accepted here,
+    because it is what the models are built with; give bed levels as samples that are
+    interpolated onto the cells rather than as values per cell.
+
+## Holes in the domain
+
+A hole in the domain is clipped the same way, with the same rule. An island inside a hole
+keeps its cells.
+
+## In the TOML file
+
+```toml
+water_removal = "centre"
+
+[[water_areas]]
+path = "model.gpkg"
+layer = "water"
+```

@@ -1,0 +1,69 @@
+# Use the mesh in D-HYDRO
+
+```python exec="on" session="dhydro"
+import tempfile
+from pathlib import Path
+
+import netCDF4
+from shapely import Point, box
+
+from refined_quads import generate
+
+workdir = Path(tempfile.mkdtemp())
+mesh = generate(
+    box(155_000, 463_000, 155_320, 463_240),
+    cell_size=32.0,
+    refinement_areas=[(Point(155_160, 463_120).buffer(40), 1)],
+    transition_rows=1,
+    crs="EPSG:28992",
+)
+```
+
+## Write a net file
+
+```python exec="on" source="above" session="dhydro"
+from refined_quads import write_ugrid
+
+write_ugrid(mesh, workdir / "mesh_net.nc")
+```
+
+The file is UGRID-1.0 with the structure of the D-HYDRO mesh generator export: the
+`Mesh2d` topology with nodes, edges and faces, edge and face coordinates and face bounds.
+For EPSG:28992 the CRS variable has exactly the attributes of the D-Flow FM plugin; for
+another projected CRS they are derived with pyproj; a mesh without CRS gets no CRS
+variable.
+
+```python exec="on" result="text" session="dhydro"
+with netCDF4.Dataset(workdir / "mesh_net.nc") as ds:
+    crs = ds["projected_coordinate_system"]
+    print("variables:", ", ".join(ds.variables))
+    print(f"CRS: {crs.getncattr('name')} (EPSG {crs.getncattr('epsg')})")
+```
+
+## Bed levels
+
+`Mesh2d_node_z` and `Mesh2d_face_z` hold -999 (no data), written without a fill value so
+that readers do not mask them. Give the bed level as samples (an xyz file) that D-HYDRO
+interpolates onto the cells: clipping water with MeshKernel can change cells (see
+[Water areas](water-areas.md)), so values per cell would not fit.
+
+## Read a net file
+
+`read_ugrid` reads only the 2D mesh of a net file; a 1D network and other variables in it
+are ignored. The lattice is derived from the square cells, so you can check or refine a
+mesh from any program:
+
+```python exec="on" source="above" result="text" session="dhydro"
+from refined_quads import check, read_ugrid
+
+mesh = read_ugrid(workdir / "mesh_net.nc")
+print(check(mesh).summary())
+```
+
+## If the orthogonality repair does not close
+
+D-Flow FM rejects a network whose edges are not orthogonal enough. The generator repairs
+such edges; if that does not close, `generate` raises `OrthogonalityRepairError` with the
+raw mesh (`exc.mesh`) and the problem locations (`exc.bad_points`), and the command line
+writes `<output>_raw.nc` and `<output>_problems.gpkg` next to the output so you can look
+at them in QGIS.

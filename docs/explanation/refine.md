@@ -1,0 +1,55 @@
+# Why refine starts from the mesh
+
+Refining used to mean generating the mesh twice with the original input, once with and
+once without the new areas, and splicing in the difference. That needs the original
+input, works only for meshes this generator made on a lattice through a multiple of the
+base cell, and fails for models made before 24-10-2026, when the generator still rounded
+the base cell down to a power of 2 (25 m became 16 m).
+
+`refine` starts from the mesh itself instead ([ADR-0001](../adr/0001-refine-from-existing-mesh.md)):
+
+1. **Recognise** the lattice and the lattice squares from the cells: square cells are
+   their own lattice square; other cells are grouped into the square they fill together.
+2. **Refine** those squares where the new areas need it, restore the 2:1 balance where
+   needed, and rebuild the transitions around the changed squares with this package's
+   patterns.
+3. **Keep** every square whose split sides do not change: its cells stay exactly, nodes
+   and stored coordinates included.
+
+`generate` is the same operation started from the base grid, which is why
+`refine(generate(X), Y)` gives the same cells as `generate(X + Y)` when the domain and
+the water areas are the same and `Y` stays away from where water or the domain removed
+cells.
+
+## The footprint rule
+
+The **footprint** is the area the cells of the mesh cover; holes are not part of it.
+Refining never adds cells outside it: new cells only replace existing ones. A domain or
+water areas given to `refine` only remove **new** cells.
+
+A lattice square that its cells fill only partly — because cells were clipped along
+water — is recognised too. Untouched, it keeps its remaining cells. When it must become
+finer, a new cell in it stays only where it lies completely within the old cells, so the
+mesh does not grow into the water; where finer cells cannot fill a clipped triangle
+exactly, a little area is lost.
+
+## Meshes from other programs
+
+The lattice — origin, base cell and levels — is derived from the square cells, so any
+origin and any base cell work. Transition cells may follow any pattern (another
+triangulation, a pentagon) as long as the cells of a lattice square have their nodes only
+at its corners, side midpoints and centre. A square that is touched gets this package's
+patterns; a square that is not keeps its own.
+
+## When refine refuses
+
+`refine` raises `MeshRecognitionError`, an input error with the problem locations, when:
+
+- nodes do not lie on one lattice;
+- cells fill no lattice square (a node at a third of a side, for example);
+- the 2:1 balance is broken (a square next to one more than one level coarser).
+
+A mesh of rectangles or rotated cells has no lattice at all and raises an input error
+when it is read. On the command line the locations are written to
+`<output>_recognition.gpkg`. Duplicate nodes (two nodes at one point) are accepted: cells
+that touch only in such a point lose nothing, as flow goes through edges.

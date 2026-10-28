@@ -47,6 +47,9 @@ dev = [
     "pytest-benchmark>=5.3.0",
 ]
 docs = [
+    "markdown-exec>=1.9",
+    "matplotlib>=3.8",
+    "mike>=2.1",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.27",
 ]
@@ -80,6 +83,7 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D", "ANN"]
+"docs/**" = ["D", "ANN"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -24,9 +24,11 @@ theme:
 # Agent instructions live next to the docs but are not part of the site.
 exclude_docs: |
   agents/
+  snippets/
 
 plugins:
   - search
+  - markdown-exec
   - mkdocstrings:
       handlers:
         python:
@@ -38,8 +40,14 @@ plugins:
             show_source: false
             members_order: source
 
+extra:
+  version:
+    provider: mike
+
 markdown_extensions:
   - admonition
+  - attr_list
+  - pymdownx.details
   - pymdownx.superfences
   - pymdownx.highlight
   - toc:
@@ -47,7 +55,18 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Tutorial:
+      - Your first mesh: tutorial/first-mesh.md
+  - How-to guides:
+      - Read layers from a GeoPackage: how-to/gis-layers.md
+      - Run from a TOML file: how-to/toml-cli.md
+      - Water areas: how-to/water-areas.md
+      - Refine an existing mesh: how-to/refine.md
+      - Use the mesh in D-HYDRO: how-to/d-hydro.md
   - Explanation:
+      - Refined quad meshes: explanation/refined-quad-mesh.md
+      - FM orthogonality: explanation/orthogonality.md
+      - Why refine starts from the mesh: explanation/refine.md
       - Decisions:
           - adr/index.md
           - adr/0001-refine-from-existing-mesh.md

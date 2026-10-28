@@ -88,6 +88,11 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   scenarios, and `tests/golden/benchmarks.py` to compare results with a baseline and
   report changes above 5%. CI runs slow tests and benchmarks on main and compares with
   the previous run on main; results are kept as artifact.
+- Documentation: a tutorial (a first mesh), how-to guides (GIS layers, TOML and the
+  command line, water areas, refining an existing mesh, D-HYDRO), explanations (refined
+  quad meshes, FM orthogonality, why refine starts from the mesh) and the API reference.
+  The code on the pages runs during the build and draws the mesh figures
+  (markdown-exec); versions with mike.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 
