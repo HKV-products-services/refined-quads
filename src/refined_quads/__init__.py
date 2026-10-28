@@ -18,7 +18,7 @@ from refined_quads.errors import (
     OrthogonalityRepairError,
 )
 from refined_quads.mesh import Lattice, Mesh, RefineResult, ReplacementMap
-from refined_quads.spec import LayerSource, MeshSpec, RefinementSource
+from refined_quads.spec import LayerSource, MeshSpec, RefinementSource, RefineSpec
 
 try:
     __version__ = version("refined-quads")
@@ -37,6 +37,7 @@ __all__ = [
     "MeshSpec",
     "OrthogonalityRepairError",
     "RefineResult",
+    "RefineSpec",
     "RefinementSource",
     "ReplacementMap",
     "__version__",

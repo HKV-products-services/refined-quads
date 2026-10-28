@@ -77,6 +77,10 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   as they fill a lattice square; squares that do not change keep their cells. Refine
   judges the orthogonality only of edges next to new cells, so problems the mesh
   already had do not stop it. Meshes of rectangles or rotated cells raise `InputError`.
+- `refined-quads refine mesh_net.nc extra.toml -o mesh_v2_net.nc` and `RefineSpec` (the
+  TOML of a refine: new refinement areas, optional domain and water areas): same
+  options and exit codes as `generate`; a mesh that cannot be recognised exits with 2
+  and writes `<output>_recognition.gpkg` with the problem locations.
 - `MeshReport.duplicate_nodes` (information only: cells that touch in a point lose
   nothing) and `MeshReport.split_edges` (an edge on top of another edge with other
   nodes: an internal wall; makes the mesh invalid).

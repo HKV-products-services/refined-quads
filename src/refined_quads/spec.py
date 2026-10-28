@@ -12,6 +12,8 @@ from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any, cast
 
+from pyproj import CRS
+
 from refined_quads._engine import WATER_REMOVAL_RULES
 from refined_quads._generate import WaterRemovalRule, generate
 from refined_quads._gis import (
@@ -20,8 +22,9 @@ from refined_quads._gis import (
     read_refinement_areas,
     read_water_areas,
 )
+from refined_quads._refine import refine
 from refined_quads.errors import InputError
-from refined_quads.mesh import Mesh
+from refined_quads.mesh import Mesh, RefineResult
 
 
 @dataclass(frozen=True)
@@ -133,12 +136,7 @@ class MeshSpec:
             missing or has an invalid value; the message names the key and the reason.
         """
         file = Path(path)
-        try:
-            data = tomllib.loads(file.read_text(encoding="utf-8"))
-        except OSError as exc:
-            raise InputError(f"{file}: cannot read: {exc.strerror or exc}") from exc
-        except tomllib.TOMLDecodeError as exc:
-            raise InputError(f"{file}: not valid TOML: {exc}") from exc
+        data = _load_toml(file)
         try:
             return cls.from_dict(data, base=file.parent)
         except InputError as exc:
@@ -258,9 +256,9 @@ class MeshSpec:
         return generate(
             domain,
             cell_size=self.cell_size,
-            refinement_areas=_combine(refinement, domain, with_levels=True),
+            refinement_areas=_combine(refinement, domain.crs, with_levels=True),
             transition_rows=self.transition_rows,
-            water_areas=_combine(water, domain, with_levels=False),
+            water_areas=_combine(water, domain.crs, with_levels=False),
             water_removal=cast("WaterRemovalRule", self.water_removal),
             origin=self.origin,
             progress=progress,
@@ -276,16 +274,214 @@ def _key(key: str) -> Iterator[None]:
         raise InputError(f"{key}: {exc}") from exc
 
 
-def _combine(layers: list[Areas], domain: Areas, *, with_levels: bool) -> Areas:
-    """Merge layers into one set of areas in the CRS of the domain."""
-    in_domain_crs = [areas.to_crs(domain.crs) for areas in layers]
-    geometries = tuple(g for areas in in_domain_crs for g in areas.geometries)
+def _combine(layers: list[Areas], crs: CRS, *, with_levels: bool) -> Areas:
+    """Merge layers into one set of areas in one CRS."""
+    in_crs = [areas.to_crs(crs) for areas in layers]
+    geometries = tuple(g for areas in in_crs for g in areas.geometries)
     levels = (
-        tuple(level for areas in in_domain_crs for level in (areas.levels or ()))
-        if with_levels
-        else None
+        tuple(level for areas in in_crs for level in (areas.levels or ())) if with_levels else None
     )
-    return Areas(geometries, domain.crs, levels)
+    return Areas(geometries, crs, levels)
+
+
+@dataclass(frozen=True)
+class RefineSpec:
+    """Everything ``refined-quads refine`` needs besides the mesh; one-to-one with the TOML.
+
+    Attributes
+    ----------
+    refinement_areas : tuple of RefinementSource
+        Layers with the new refinement areas.
+    transition_rows : int or tuple of int
+        Transition rows per level step from coarse to fine, or one value for all.
+    domain : LayerSource or None
+        Optional domain: new cells outside it go, its holes are clipped like water.
+    water_areas : tuple of LayerSource
+        Layers with water areas; they clip new cells only.
+    water_removal : str
+        Water removal rule: ``"centre"``, ``"inside"`` or ``"touches"``.
+    crs : str or None
+        CRS of layers that have none.
+    output : pathlib.Path or None
+        UGRID file to write.
+
+    Examples
+    --------
+    A TOML file, with paths relative to the file::
+
+        transition_rows = 1
+        output = "mesh_v2_net.nc"
+
+        [[refinement_areas]]
+        path = "extra.gpkg"
+        layer = "verfijning_nieuw"
+        level = 3
+    """
+
+    refinement_areas: tuple[RefinementSource, ...]
+    transition_rows: int | tuple[int, ...] = 1
+    domain: LayerSource | None = None
+    water_areas: tuple[LayerSource, ...] = ()
+    water_removal: str = "centre"
+    crs: str | None = None
+    output: Path | None = None
+
+    @classmethod
+    def from_toml(cls, path: str | os.PathLike[str]) -> RefineSpec:
+        """Read a refine spec from a TOML file (see :meth:`MeshSpec.from_toml`).
+
+        Parameters
+        ----------
+        path : str or path-like
+            The TOML file. Relative paths in it are relative to its directory.
+
+        Returns
+        -------
+        RefineSpec
+            The validated spec.
+
+        Raises
+        ------
+        InputError
+            If the file cannot be read, is not valid TOML, or a key is unknown,
+            missing or has an invalid value.
+        """
+        file = Path(path)
+        data = _load_toml(file)
+        try:
+            return cls.from_dict(data, base=file.parent)
+        except InputError as exc:
+            raise InputError(f"{file}: {exc}") from exc
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any], base: str | os.PathLike[str] = ".") -> RefineSpec:
+        """Build a refine spec from the contents of a TOML file.
+
+        Parameters
+        ----------
+        data : mapping
+            The parsed TOML.
+        base : str or path-like
+            Directory that relative paths are relative to.
+
+        Returns
+        -------
+        RefineSpec
+            The validated spec.
+
+        Raises
+        ------
+        InputError
+            If a key is unknown, missing or has an invalid value.
+        """
+        base_dir = Path(base)
+        _known(data, {f.name for f in fields(cls)}, "")
+        refinement = _list_of_tables(data.get("refinement_areas", []), "refinement_areas")
+        if not refinement:
+            raise InputError("refinement_areas: missing ([[refinement_areas]] tables)")
+        water = _list_of_tables(data.get("water_areas", []), "water_areas")
+        return cls(
+            refinement_areas=tuple(
+                _refinement(t, f"refinement_areas[{i}]", base_dir) for i, t in enumerate(refinement)
+            ),
+            transition_rows=_rows(data.get("transition_rows", 1), "transition_rows"),
+            domain=None if "domain" not in data else _layer(data["domain"], "domain", base_dir),
+            water_areas=tuple(
+                _layer(t, f"water_areas[{i}]", base_dir) for i, t in enumerate(water)
+            ),
+            water_removal=_rule(data.get("water_removal", "centre"), "water_removal"),
+            crs=_optional_str(data.get("crs"), "crs"),
+            output=None if "output" not in data else base_dir / _string(data["output"], "output"),
+        )
+
+    def replace(self, **changes: Any) -> RefineSpec:  # noqa: ANN401
+        """Return a copy with some values replaced, validated like the TOML values.
+
+        Parameters
+        ----------
+        **changes
+            New values for ``transition_rows``, ``water_removal``, ``crs`` or ``output``.
+
+        Returns
+        -------
+        RefineSpec
+            The new spec.
+
+        Raises
+        ------
+        InputError
+            If a value is invalid.
+        """
+        checks: dict[str, Callable[[Any, str], Any]] = {
+            "transition_rows": _rows,
+            "water_removal": _rule,
+            "crs": _optional_str,
+            "output": _output,
+        }
+        unknown = set(changes) - set(checks)
+        if unknown:
+            raise InputError(f"cannot replace {sorted(unknown)}; only {sorted(checks)}")
+        new: dict[str, Any] = {k: checks[k](v, k) for k, v in changes.items()}
+        return replace(self, **new)
+
+    def refine(
+        self, mesh: Mesh, progress: Callable[[float, str], object] | None = None
+    ) -> RefineResult:
+        """Read the layers and refine the mesh.
+
+        Parameters
+        ----------
+        mesh : Mesh
+            The existing mesh.
+        progress : callable, optional
+            Progress callback, as for :func:`generate`.
+
+        Returns
+        -------
+        RefineResult
+            The refined mesh and the replacement map.
+
+        Raises
+        ------
+        InputError
+            If a layer is invalid, or the mesh cannot be recognised
+            (``MeshRecognitionError``).
+        OrthogonalityRepairError
+            If the orthogonality repair does not close.
+        """
+        refinement = []
+        for i, src in enumerate(self.refinement_areas):
+            with _key(f"refinement_areas[{i}]"):
+                refinement.append(
+                    read_refinement_areas(src.path, src.layer, level=src.level, crs=self.crs)
+                )
+        water = []
+        for i, layer in enumerate(self.water_areas):
+            with _key(f"water_areas[{i}]"):
+                water.append(read_water_areas(layer.path, layer.layer, crs=self.crs))
+        domain = None
+        if self.domain is not None:
+            with _key("domain"):
+                domain = read_domain(self.domain.path, self.domain.layer, crs=self.crs)
+        target = mesh.crs if mesh.crs is not None else refinement[0].crs
+        return refine(
+            mesh,
+            _combine(refinement, target, with_levels=True),
+            transition_rows=self.transition_rows,
+            domain=domain,
+            water_areas=_combine(water, target, with_levels=False),
+            water_removal=cast("WaterRemovalRule", self.water_removal),
+            progress=progress,
+        )
+
+
+def _load_toml(file: Path) -> dict[str, Any]:
+    try:
+        return tomllib.loads(file.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise InputError(f"{file}: cannot read: {exc.strerror or exc}") from exc
+    except tomllib.TOMLDecodeError as exc:
+        raise InputError(f"{file}: not valid TOML: {exc}") from exc
 
 
 def _known(table: Mapping[str, Any], known: set[str], prefix: str) -> None:

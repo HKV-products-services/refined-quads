@@ -10,13 +10,16 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+import numpy as np
+
 from refined_quads import __version__
 from refined_quads._check import check
 from refined_quads._engine import WATER_REMOVAL_RULES
-from refined_quads._gis import write_problem_points
+from refined_quads._gis import write_points, write_problem_points
 from refined_quads._ugrid import read_ugrid, write_ugrid
-from refined_quads.errors import InputError, OrthogonalityRepairError
-from refined_quads.spec import MeshSpec
+from refined_quads.errors import InputError, MeshRecognitionError, OrthogonalityRepairError
+from refined_quads.mesh import Mesh
+from refined_quads.spec import MeshSpec, RefineSpec
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -65,6 +68,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gen.add_argument("-v", "--verbose", action="store_true", help="show progress messages")
 
+    ref = commands.add_parser(
+        "refine",
+        help="refine an existing UGRID mesh with the areas of a TOML file",
+        description="Refine the 2D mesh of a UGRID file with the new refinement areas of a "
+        "TOML file (see RefineSpec) and write the result as UGRID. Options override the "
+        "values in the TOML file.",
+    )
+    ref.add_argument("mesh", type=Path, help="UGRID file with the existing mesh")
+    ref.add_argument("spec", type=Path, help="TOML file with the new refinement areas")
+    ref.add_argument("-o", "--output", type=Path, help="UGRID file to write (overrides 'output')")
+    ref.add_argument(
+        "--transition-rows",
+        type=int,
+        nargs="+",
+        metavar="N",
+        help="transition rows per level step from coarse to fine, or one value for all",
+    )
+    ref.add_argument("--water-removal", choices=WATER_REMOVAL_RULES, help="water removal rule")
+    ref.add_argument("--crs", help="CRS of layers without one (overrides 'crs')")
+    ref.add_argument("-v", "--verbose", action="store_true", help="show progress messages")
+
     info = commands.add_parser(
         "info",
         help="show the lattice, levels, cells and checks of a UGRID mesh",
@@ -96,6 +120,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "generate":
             return _generate(args)
+        if args.command == "refine":
+            return _refine(args)
         return _info(args)
     except InputError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -112,15 +138,7 @@ def _generate(args: argparse.Namespace) -> int:
     spec = MeshSpec.from_toml(args.spec)
     overrides = {
         "cell_size": args.cell_size,
-        "transition_rows": (
-            None
-            if args.transition_rows is None
-            else (
-                args.transition_rows[0]
-                if len(args.transition_rows) == 1
-                else tuple(args.transition_rows)
-            )
-        ),
+        "transition_rows": _rows_option(args.transition_rows),
         "water_removal": args.water_removal,
         "crs": args.crs,
         "origin": None if args.origin is None else tuple(args.origin),
@@ -141,6 +159,55 @@ def _generate(args: argparse.Namespace) -> int:
     print(f"wrote {spec.output}")
     print(report.summary())
     return EXIT_OK
+
+
+def _rows_option(values: list[int] | None) -> int | tuple[int, ...] | None:
+    if values is None:
+        return None
+    return values[0] if len(values) == 1 else tuple(values)
+
+
+def _refine(args: argparse.Namespace) -> int:
+    spec = RefineSpec.from_toml(args.spec)
+    overrides = {
+        "transition_rows": _rows_option(args.transition_rows),
+        "water_removal": args.water_removal,
+        "crs": args.crs,
+        "output": args.output,
+    }
+    spec = spec.replace(**{k: v for k, v in overrides.items() if v is not None})
+    if spec.output is None:
+        raise InputError("no output file: give -o/--output or 'output' in the TOML file")
+    mesh = read_ugrid(args.mesh)
+    try:
+        result = spec.refine(mesh, progress=_print_progress if args.verbose else None)
+    except MeshRecognitionError as exc:
+        _write_locations(exc, spec.output, mesh)
+        raise InputError(f"{args.mesh}: {exc}") from exc
+    except InputError as exc:
+        raise InputError(f"{args.spec}: {exc}") from exc
+    except OrthogonalityRepairError as exc:
+        _write_dump(exc, spec.output)
+        raise
+    write_ugrid(result.mesh, spec.output)
+    rm = result.replacement_map
+    print(f"wrote {spec.output}")
+    print(f"cells: {int(rm.unchanged.sum())} unchanged, {int((~rm.unchanged).sum())} new, "
+          f"{len(rm.removed)} existing cells replaced or removed")  # fmt: skip
+    print(check(result.mesh).summary())
+    return EXIT_OK
+
+
+def _write_locations(exc: MeshRecognitionError, output: Path, mesh: Mesh) -> None:
+    """Write where a mesh could not be recognised next to the output (never masks the error)."""
+    stem = output.with_suffix("")
+    path = stem.with_name(f"{stem.name}_recognition.gpkg")
+    try:
+        problem = np.array([str(exc).split(";")[0][:254]] * len(exc.locations), dtype=object)
+        write_points(path, "recognition_problems", exc.locations, {"problem": problem}, mesh.crs)
+        print(f"wrote {len(exc.locations)} problem locations to {path}", file=sys.stderr)
+    except Exception as dump_exc:  # any failure: it must not mask the recognition error
+        print(f"warning: could not write {path}: {dump_exc}", file=sys.stderr)
 
 
 def _write_dump(exc: OrthogonalityRepairError, output: Path) -> None:
