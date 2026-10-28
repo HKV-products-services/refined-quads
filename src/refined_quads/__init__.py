@@ -7,7 +7,8 @@ refined by repeated halving, with transition cells only where refinement levels 
 from importlib.metadata import PackageNotFoundError, version
 
 from refined_quads._check import MeshReport, check
-from refined_quads.errors import InputError
+from refined_quads._generate import generate
+from refined_quads.errors import InputError, OrthogonalityRepairError
 from refined_quads.mesh import Lattice, Mesh
 
 try:
@@ -15,4 +16,13 @@ try:
 except PackageNotFoundError:  # running from a source tree that is not installed
     __version__ = "0.0.0"
 
-__all__ = ["InputError", "Lattice", "Mesh", "MeshReport", "__version__", "check"]
+__all__ = [
+    "InputError",
+    "Lattice",
+    "Mesh",
+    "MeshReport",
+    "OrthogonalityRepairError",
+    "__version__",
+    "check",
+    "generate",
+]

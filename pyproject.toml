@@ -41,6 +41,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "meshkernel>=8.3.0",
+    "types-shapely>=2.1.0.20260728",
 ]
 docs = [
     "mkdocs-material>=9.5",

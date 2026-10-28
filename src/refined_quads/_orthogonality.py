@@ -105,7 +105,7 @@ def _rgfgrid_centres(
     centroid = (a + b + c) / 3.0
     ax, ay, bx, by, cx, cy = a[:, 0], a[:, 1], b[:, 0], b[:, 1], c[:, 0], c[:, 1]
     d = 2.0 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
-    ok = np.abs(d) >= 1e-12 * h * h
+    ok = np.abs(d) >= 1e-12 * (h * h)
     out = centroid.copy()
     if not ok.any():
         return out
