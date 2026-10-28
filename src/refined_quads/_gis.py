@@ -8,6 +8,7 @@ import os
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -349,3 +350,38 @@ def crs_cf_attributes(crs: CRS) -> dict[str, Any]:
         "projection_name": operation.method_name if operation else "unknown",
         "wkt": crs.to_wkt("WKT1_GDAL", pretty=True),
     }
+
+
+def write_problem_points(
+    path: str | os.PathLike[str],
+    points: Sequence[tuple[float, float, float | None]],
+    crs: CRS | None,
+) -> None:
+    """Write orthogonality problem locations as a point layer to a new GeoPackage.
+
+    Parameters
+    ----------
+    path : str or path-like
+        GeoPackage to write; an existing file is replaced.
+    points : sequence of (x, y, orth_e)
+        Location and FM orthogonality; ``None`` (a degenerate edge) is written as -1.
+    crs : pyproj.CRS or None
+        CRS of the points.
+    """
+    target = Path(path)
+    target.unlink(missing_ok=True)
+    xy = np.array([(x, y) for x, y, _ in points], dtype=np.float64).reshape(-1, 2)
+    orth = np.array([-1.0 if o is None else o for _, _, o in points], dtype=np.float64)
+    with warnings.catch_warnings():
+        # Without a CRS (a mesh of unknown CRS) pyogrio warns; that is intended here.
+        warnings.filterwarnings("ignore", "'crs' was not provided", UserWarning)
+        pyogrio.raw.write(
+            target,
+            shapely.to_wkb(shapely.points(xy)),
+            field_data=[orth],
+            fields=["orth_e"],
+            crs=None if crs is None else crs.to_wkt(),
+            geometry_type="Point",
+            layer="orthogonality_problems",
+            driver="GPKG",
+        )

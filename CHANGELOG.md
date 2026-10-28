@@ -50,6 +50,11 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   rising from 0 to 1 and English messages; returning `True` cancels the run with
   `Cancelled` (the old generator raised a `RuntimeError`). `refined-quads generate -v`
   prints the progress.
+- `OrthogonalityRepairError.mesh`: the raw mesh before the repair, next to
+  `bad_points`. When the repair does not close, `refined-quads generate` writes
+  `<output>_raw.nc` and `<output>_problems.gpkg` (layer `orthogonality_problems`,
+  field `orth_e`, -1 for a degenerate edge) in the CRS of the mesh and exits with 1; a
+  failure to write them is reported without hiding the repair error.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 

@@ -13,6 +13,7 @@ from pathlib import Path
 from refined_quads import __version__
 from refined_quads._check import check
 from refined_quads._engine import WATER_REMOVAL_RULES
+from refined_quads._gis import write_problem_points
 from refined_quads._ugrid import read_ugrid, write_ugrid
 from refined_quads.errors import InputError, OrthogonalityRepairError
 from refined_quads.spec import MeshSpec
@@ -132,11 +133,36 @@ def _generate(args: argparse.Namespace) -> int:
         mesh = spec.generate(progress=_print_progress if args.verbose else None)
     except InputError as exc:
         raise InputError(f"{args.spec}: {exc}") from exc
+    except OrthogonalityRepairError as exc:
+        _write_dump(exc, spec.output)
+        raise
     write_ugrid(mesh, spec.output)
     report = check(mesh)
     print(f"wrote {spec.output}")
     print(report.summary())
     return EXIT_OK
+
+
+def _write_dump(exc: OrthogonalityRepairError, output: Path) -> None:
+    """Write the raw mesh and the problem locations next to the output.
+
+    A failure here is reported but does not replace the original error.
+    """
+    stem = output.with_suffix("")
+    raw_path = stem.with_name(f"{stem.name}_raw.nc")
+    problems_path = stem.with_name(f"{stem.name}_problems.gpkg")
+    if exc.mesh is not None:
+        try:
+            write_ugrid(exc.mesh, raw_path)
+            print(f"wrote the raw (unrepaired) mesh to {raw_path}", file=sys.stderr)
+        except Exception as dump_exc:  # any failure: it must not mask the repair error
+            print(f"warning: could not write {raw_path}: {dump_exc}", file=sys.stderr)
+    try:
+        crs = None if exc.mesh is None else exc.mesh.crs
+        write_problem_points(problems_path, exc.bad_points, crs)
+        print(f"wrote {len(exc.bad_points)} problem locations to {problems_path}", file=sys.stderr)
+    except Exception as dump_exc:  # idem
+        print(f"warning: could not write {problems_path}: {dump_exc}", file=sys.stderr)
 
 
 def _print_progress(fraction: float, message: str) -> None:

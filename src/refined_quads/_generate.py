@@ -13,9 +13,9 @@ from numpy.typing import NDArray
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._engine import WATER_REMOVAL_RULES, generate_cells
+from refined_quads._engine import WATER_REMOVAL_RULES, RawRepairError, generate_cells
 from refined_quads._gis import Areas, frame_areas, is_frame
-from refined_quads.errors import InputError
+from refined_quads.errors import InputError, OrthogonalityRepairError
 from refined_quads.mesh import Lattice, Mesh, projected_crs
 
 _POLYGONAL = ("Polygon", "MultiPolygon")
@@ -95,7 +95,9 @@ def generate(
         rule is unknown, the origin is not two finite numbers, or no cells are left
         inside the domain.
     OrthogonalityRepairError
-        If the orthogonality repair cannot make every internal edge FM-orthogonal.
+        If the orthogonality repair cannot make every internal edge FM-orthogonal;
+        it carries the raw mesh (``mesh``) and the problem locations
+        (``bad_points``).
     Cancelled
         If the progress callback returned ``True``.
 
@@ -124,17 +126,22 @@ def generate(
 
     lattice_origin = None if origin is None else _origin(origin)
 
-    vertices, cells, grid_start = generate_cells(
-        domain_geom,
-        areas,
-        cell_size=size,
-        levels=levels,
-        transition_rows=rows,
-        water_areas=water,
-        water_removal=water_removal,
-        origin=lattice_origin,
-        progress=None if progress is None else _ProgressAdapter(progress),
-    )
+    try:
+        vertices, cells, grid_start = generate_cells(
+            domain_geom,
+            areas,
+            cell_size=size,
+            levels=levels,
+            transition_rows=rows,
+            water_areas=water,
+            water_removal=water_removal,
+            origin=lattice_origin,
+            progress=None if progress is None else _ProgressAdapter(progress),
+        )
+    except RawRepairError as exc:
+        raw_lattice = Lattice(lattice_origin or exc.grid_start, size, levels)
+        raw = _to_mesh(exc.vertices, exc.cells, raw_lattice, mesh_crs)
+        raise OrthogonalityRepairError(str(exc), exc.bad_points, mesh=raw) from None
     lattice = Lattice(lattice_origin or grid_start, size, levels)
     return _to_mesh(vertices, cells, lattice, mesh_crs)
 

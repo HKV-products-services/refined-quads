@@ -131,6 +131,23 @@ def _rgfgrid_center(a: Float2, b: Float2, c: Float2, h: float) -> Float2:
     return _closest_point_in_triangle(cc, a, b, c)
 
 
+class RawRepairError(OrthogonalityRepairError):
+    """Repair failure with the raw nodes and cells, for the caller to build the raw mesh."""
+
+    def __init__(
+        self,
+        message: str,
+        bad_points: list[tuple[float, float, float | None]],
+        vertices: NDArray[np.float64],
+        cells: list[list[int]],
+        grid_start: tuple[float, float],
+    ) -> None:
+        super().__init__(message, bad_points)
+        self.vertices = vertices
+        self.cells = cells
+        self.grid_start = grid_start
+
+
 class _BadEdgeStats(NamedTuple):
     n_internal: int
     worst: float
@@ -1494,7 +1511,11 @@ def generate_cells(
     # Last step, after balancing, centre splits and head-to-toe; may add centre nodes.
     _check_cancel(msg="Quad Grid: orthogonality check...")
     log = None if progress is None else (lambda m: progress(None, m))
-    vertices, out_cells = orthogonality_repair(vertices, out_cells, log=log)
+    raw_cells = [list(c) for c in out_cells]  # the repair changes out_cells in place
+    try:
+        vertices, out_cells = orthogonality_repair(vertices, out_cells, log=log)
+    except OrthogonalityRepairError as exc:
+        raise RawRepairError(str(exc), exc.bad_points, vertices, raw_cells, (ox, oy)) from None
 
     _check_cancel(100, f"Quad Grid: done - {len(vertices)} nodes, {len(out_cells)} elements.")
     return vertices, out_cells, (ox, oy)
