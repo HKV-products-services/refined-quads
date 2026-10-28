@@ -18,6 +18,10 @@ input produces is a minor version or higher, with a changelog entry.
 
 ## Consequences
 
+- A cell is compared as a polygon: the node it starts with and its orientation are
+  free. The generator at `9a324bc` writes about 5% of its transition triangles
+  clockwise; this package writes every face counterclockwise, and `check` reports the
+  orientation separately.
 - Everything up to the final conversion works in integer lattice indices,
   including the centre nodes the orthogonality repair adds.
 - Dropping the old 1 m minimum cell size is an intended output change: a 24 m base

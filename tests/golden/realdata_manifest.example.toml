@@ -1,0 +1,18 @@
+# Real-data scenarios for `record.py --realdata` (Geul, Parkstad). Keep the real manifest
+# and the recorded masters outside the repository, in the directory that
+# REFINED_QUADS_REALDATA points to; the tests then run with `uv run pytest -m realdata`.
+#
+# Paths are relative to this file. Layers are transformed to the CRS of the domain layer;
+# a layer without a CRS is an error. The scenario is in this package's terms and is
+# translated for the generator at qgis_dhydamo 9a324bc like the synthetic scenarios.
+
+[[scenario]]
+name = "geul_25m"
+description = "Geul model area with the refinement steps of 8a."
+domain = { path = "geul/modelgebied.gpkg", layer = "modelgebied" }
+# `level` is a column name with the refinement level per polygon, or one integer for all.
+refinement_areas = { path = "geul/verfijning.gpkg", layer = "verfijning", level = "refinement" }
+water_areas = { path = "geul/water.gpkg", layer = "waterdeel" }  # optional
+cell_size = 25.0
+transition_rows = [1, 1, 1]  # per step from coarse to fine, each at least 1
+water_removal = "centre"  # centre, inside or touches

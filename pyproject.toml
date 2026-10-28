@@ -40,6 +40,7 @@ dev = [
     "pytest-timeout>=2.3",
     "ruff>=0.8",
     "mypy>=1.13",
+    "meshkernel>=8.3.0",
 ]
 docs = [
     "mkdocs-material>=9.5",
@@ -94,6 +95,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--durations=15",
+    "-p", "pytester",
     "-m", "not slow and not benchmark and not realdata",
 ]
 timeout = 10

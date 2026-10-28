@@ -10,3 +10,10 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 ### Added
 
 - Project skeleton: uv project, ruff, mypy, pytest, CI workflow and documentation site.
+- `Mesh` and `Lattice`: an immutable mesh (nodes, faces padded with -1) on its lattice.
+- `check(mesh) -> MeshReport`: hanging nodes, 2:1 balance, FM orthogonality per internal
+  edge (the D-Flow FM measure), orientation, cells per refinement level and nodes off the
+  lattice.
+- `InputError` for invalid input.
+- Golden masters of the generator at qgis_dhydamo `9a324bc` for twelve synthetic
+  scenarios, with the recording script and a runtime baseline (`tests/golden`).

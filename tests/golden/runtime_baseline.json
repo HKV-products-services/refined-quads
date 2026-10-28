@@ -1,0 +1,84 @@
+{
+  "generator": "qgis_dhydamo 9a324bc",
+  "machine": {
+    "numpy": "2.5.4",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "processor": "Intel64 Family 6 Model 140 Stepping 1, GenuineIntel",
+    "python": "3.12.16",
+    "shapely": "2.2.0"
+  },
+  "scenarios": {
+    "cell_size_12_5": {
+      "cells": 3822,
+      "median_seconds": 0.182,
+      "runs": 3,
+      "seconds": 0.1724
+    },
+    "cell_size_24_four_levels": {
+      "cells": 6618,
+      "median_seconds": 0.2943,
+      "runs": 3,
+      "seconds": 0.2709
+    },
+    "cell_size_25": {
+      "cells": 4359,
+      "median_seconds": 0.1764,
+      "runs": 3,
+      "seconds": 0.1655
+    },
+    "cell_size_32": {
+      "cells": 2935,
+      "median_seconds": 0.1422,
+      "runs": 3,
+      "seconds": 0.1331
+    },
+    "domain_with_hole": {
+      "cells": 867,
+      "median_seconds": 0.0618,
+      "runs": 3,
+      "seconds": 0.0577
+    },
+    "l_shaped_domain": {
+      "cells": 1006,
+      "median_seconds": 0.0634,
+      "runs": 3,
+      "seconds": 0.0575
+    },
+    "many_small_water_areas": {
+      "cells": 2326,
+      "median_seconds": 0.0981,
+      "runs": 3,
+      "seconds": 0.0967
+    },
+    "refinement_at_domain_edge": {
+      "cells": 2112,
+      "median_seconds": 0.1089,
+      "runs": 3,
+      "seconds": 0.1046
+    },
+    "transition_rows_3_2_1_1": {
+      "cells": 7065,
+      "median_seconds": 0.3076,
+      "runs": 3,
+      "seconds": 0.3075
+    },
+    "water_removal_centre": {
+      "cells": 1466,
+      "median_seconds": 0.064,
+      "runs": 3,
+      "seconds": 0.0634
+    },
+    "water_removal_inside": {
+      "cells": 1541,
+      "median_seconds": 0.0699,
+      "runs": 3,
+      "seconds": 0.0681
+    },
+    "water_removal_touches": {
+      "cells": 1366,
+      "median_seconds": 0.0625,
+      "runs": 3,
+      "seconds": 0.0624
+    }
+  }
+}
