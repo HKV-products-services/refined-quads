@@ -1,16 +1,14 @@
 import sys
 
 import numpy as np
-import pyogrio.raw
 import pytest
 import shapely
 from pyproj import CRS
 from shapely import Point, box
 
 from golden.compare import assert_same_cells
-from handmade import RD, generate_rd
+from handmade import RD, generate_rd, write_layer
 from refined_quads import (
-    Areas,
     InputError,
     check,
     generate,
@@ -25,22 +23,6 @@ DOMAIN = shapely.union_all(DOMAIN_PARTS)
 AREAS = [Point(X0 + 200, Y0 + 200).buffer(60), Point(X0 + 450, Y0 + 120).buffer(35)]
 LEVELS = [2, 1]
 WATER = [Point(X0 + 420, Y0 + 300).buffer(25)]
-
-
-def write_layer(path, layer, geometries, crs=RD, fields=None):
-    fields = fields or {}
-    geoms = np.asarray(geometries, dtype=object)
-    in_crs = CRS(crs) if crs else None
-    if in_crs is not None and in_crs != CRS(RD):
-        geoms = Areas(tuple(geoms), RD).to_crs(in_crs).geometries
-    kind = shapely.get_type_id(np.asarray(geoms, dtype=object))
-    geometry_type = {0: "Point", 3: "Polygon", 6: "MultiPolygon"}[int(kind.max())]
-    pyogrio.raw.write(
-        path, shapely.to_wkb(np.asarray(geoms, dtype=object)),
-        field_data=[np.asarray(v) for v in fields.values()], fields=list(fields),
-        crs=in_crs.to_wkt() if in_crs else None, geometry_type=geometry_type,
-        layer=layer, driver="GPKG",
-    )  # fmt: skip
 
 
 @pytest.fixture

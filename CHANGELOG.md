@@ -36,6 +36,12 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 - `generate` takes `Areas` and GeoDataFrames and has a `crs` parameter for input
   without CRS. The mesh gets the CRS of the domain; other input is transformed to it.
 - `write_ugrid` derives the CRS attributes of CRSs other than EPSG:28992 with pyproj.
+- `MeshSpec`: the input of a run, one-to-one with a TOML file (`MeshSpec.from_toml`,
+  `replace`, `generate`); an invalid TOML file gives an `InputError` naming the key and
+  the reason.
+- Command line: `refined-quads generate run.toml -o mesh_net.nc` (options override the
+  TOML values) and `refined-quads info mesh_net.nc` (lattice, cells per level and the
+  checks). Exit codes: 0 success, 1 the run failed, 2 invalid input or arguments.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 

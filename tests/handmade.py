@@ -1,8 +1,11 @@
 """Small handmade meshes, written as cells of lattice points."""
 
 import numpy as np
+import pyogrio.raw
+import shapely
+from pyproj import CRS
 
-from refined_quads import Lattice, Mesh, generate
+from refined_quads import Areas, Lattice, Mesh, generate
 
 ORIGIN = (1000.0, 2000.0)
 RD = "EPSG:28992"
@@ -36,3 +39,20 @@ FINE_RIGHT = [
     [(6, 2), (8, 2), (8, 4), (6, 4)],
 ]
 CLEAN = [[(0, 0), (4, 0), (4, 2)], [(0, 0), (4, 2), (0, 4)], [(4, 2), (4, 4), (0, 4)], *FINE_RIGHT]
+
+
+def write_layer(path, layer, geometries, crs=RD, fields=None):
+    """Write polygons given in RD New to a GeoPackage layer, in ``crs`` (None: no CRS)."""
+    fields = fields or {}
+    geoms = np.asarray(geometries, dtype=object)
+    in_crs = CRS(crs) if crs else None
+    if in_crs is not None and in_crs != CRS(RD):
+        geoms = Areas(tuple(geoms), RD).to_crs(in_crs).geometries
+    kind = shapely.get_type_id(np.asarray(geoms, dtype=object))
+    geometry_type = {0: "Point", 3: "Polygon", 6: "MultiPolygon"}[int(kind.max())]
+    pyogrio.raw.write(
+        path, shapely.to_wkb(np.asarray(geoms, dtype=object)),
+        field_data=[np.asarray(v) for v in fields.values()], fields=list(fields),
+        crs=in_crs.to_wkt() if in_crs else None, geometry_type=geometry_type,
+        layer=layer, driver="GPKG",
+    )  # fmt: skip
