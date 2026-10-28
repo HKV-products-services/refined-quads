@@ -79,6 +79,10 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   `max_refinement`. A level that is not an integer of at least 1 raises `InputError`
   instead of being clamped.
 - Explicit refine zones without transition rows and support for shapely < 2 are gone.
+- The orthogonality repair works on integer lattice indices: flips, convexity and the
+  redecomposition of lattice squares are exact, and the centre nodes it adds lie exactly
+  on the lattice (the old generator computed them as float midpoints). Only the FM
+  measure uses coordinates, as D-Flow FM does.
 - Water areas that are given are always applied; there is no `clip_water` switch that
   silently ignored them. An unknown water removal rule raises `InputError` instead of
   falling back to the centre rule.

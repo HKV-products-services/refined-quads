@@ -38,6 +38,18 @@
       "runs": 3,
       "seconds": 0.0564
     },
+    "head_to_toe_boxes": {
+      "cells": 840,
+      "median_seconds": 0.0624,
+      "runs": 3,
+      "seconds": 0.0533
+    },
+    "head_to_toe_circles": {
+      "cells": 1875,
+      "median_seconds": 0.1515,
+      "runs": 3,
+      "seconds": 0.1286
+    },
     "l_shaped_domain": {
       "cells": 1006,
       "median_seconds": 0.079,

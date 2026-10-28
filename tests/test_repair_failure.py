@@ -24,12 +24,12 @@ AREA = Point(X0 + 100, Y0 + 75).buffer(20)
 
 @pytest.fixture
 def failing_repair(monkeypatch):
-    repair = engine.orthogonality_repair
+    repair = engine.repair_orthogonality
 
-    def fail(vertices, cells, **kwargs):
-        return repair(vertices, cells, max_passes=0, max_fm_ortho=-1.0, log=kwargs.get("log"))
+    def fail(cells, nodes, origin, unit, **kwargs):
+        return repair(cells, nodes, origin, unit, max_passes=0, max_fm_ortho=-1.0)
 
-    monkeypatch.setattr(engine, "orthogonality_repair", fail)
+    monkeypatch.setattr(engine, "repair_orthogonality", fail)
 
 
 def test_error_carries_the_raw_mesh_and_the_problem_points(failing_repair):

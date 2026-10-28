@@ -61,6 +61,7 @@ LEGACY_WRITER = "tools/runtime/mesh/meshgen/mesh_builder.py"
 LEGACY_CRS = "tools/runtime/mesh/net_crs.py"
 UGRID_DIR = Path(__file__).parent / "ugrid"
 UGRID_SCENARIO = "domain_with_hole"
+REPAIR_DIR = Path(__file__).parent / "repair"
 LEGACY_WATER_OPTIONS = {
     "centre": "FACES_WITH_INCLUDED_CIRCUMCENTERS",
     "inside": "INSIDE_NOT_INTERSECTED",
@@ -108,6 +109,45 @@ def load_legacy_writer(repo: Path):
     sys.path.insert(0, str(directory))  # its fallback imports: generate_quad_refinement, net_crs
     sys.modules.setdefault("geopandas", types.ModuleType("geopandas"))
     return _import(directory / "mesh_builder.py", "legacy_mesh_builder")
+
+
+def record_repair_reference(repo: Path, rerecord: bool) -> None:
+    """Store what the legacy orthogonality repair makes of the handmade sliver meshes."""
+    from golden.repair_cases import CASES
+
+    engine = load_legacy_engine(repo)
+    REPAIR_DIR.mkdir(exist_ok=True)
+    for case in CASES:
+        target = REPAIR_DIR / f"{case.name}.npz"
+        if target.exists() and not rerecord:
+            sys.exit(f"error: {target.name} exists; pass --rerecord to overwrite it")
+        points = sorted({p for cell in case.cells for p in cell})
+        number = {p: i for i, p in enumerate(points)}
+        cells = [[number[p] for p in cell] for cell in case.cells]
+        idx = np.asarray(points, dtype=np.float64)
+        vertices = np.column_stack(
+            [case.origin[0] + idx[:, 0] * case.unit, case.origin[1] + idx[:, 1] * case.unit]
+        )
+        messages = []
+        out_vertices, out_cells = engine.orthogonality_repair(
+            vertices, [list(c) for c in cells], log=messages.append
+        )
+        scaled = (np.asarray(out_vertices) - np.asarray(case.origin)) / case.unit
+        out_points = np.rint(scaled).astype(np.int64)
+        if np.abs(scaled - out_points).max() > 1e-6:
+            raise ValueError(f"{case.name}: the legacy repair made a node off the lattice")
+        width = max(len(c) for c in out_cells)
+        out_faces = np.full((len(out_cells), width), -1, dtype=np.int64)
+        for i, cell in enumerate(out_cells):
+            out_faces[i, : len(cell)] = cell
+        np.savez_compressed(
+            target,
+            points=out_points,
+            faces=out_faces,
+            log=np.str_("\n".join(messages)),
+            legacy_commit=np.str_(LEGACY_COMMIT),
+        )
+        print(f"{target}: {len(out_cells)} cells; {messages[-1]}")
 
 
 def record_ugrid_reference(repo: Path, rerecord: bool) -> None:
@@ -334,13 +374,17 @@ def main(argv=None) -> int:
     parser.add_argument("--repeat", type=int, default=3, help="runs per scenario for the timing")
     parser.add_argument("--ugrid-reference", action="store_true",
                         help=f"write the old UGRID file of {UGRID_SCENARIO}")  # fmt: skip
+    parser.add_argument("--repair-reference", action="store_true",
+                        help="store the legacy repair of the handmade sliver meshes")  # fmt: skip
     parser.add_argument("--realdata", type=Path, metavar="MANIFEST",
                         help="record the real-data scenarios of this TOML manifest")  # fmt: skip
     parser.add_argument("--out", type=Path, default=os.environ.get(REALDATA_ENV),
                         help=f"real-data output directory (default: ${REALDATA_ENV})")  # fmt: skip
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING)
-    if args.ugrid_reference:
+    if args.repair_reference:
+        record_repair_reference(args.qgis_dhydamo, args.rerecord)
+    elif args.ugrid_reference:
         record_ugrid_reference(args.qgis_dhydamo, args.rerecord)
     elif args.realdata:
         if args.out is None:

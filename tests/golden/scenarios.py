@@ -59,6 +59,18 @@ def _box(x0, y0, x1, y1):
     return box(X0 + x0, Y0 + y0, X0 + x1, Y0 + y1)
 
 
+# The head-to-toe scenarios keep the coordinates of the random search they come from.
+TX, TY = 187_000.0, 318_000.0
+
+
+def _disc(x, y, r, quad_segs=16):
+    return Point(TX + x, TY + y).buffer(r, quad_segs=quad_segs)
+
+
+def _bar(x, y, w, h, angle):
+    return rotate(box(TX + x, TY + y, TX + x + w, TY + y + h), angle, origin="centroid")
+
+
 def _l_shape():
     return Polygon(
         [(X0, Y0), (X0 + 900, Y0), (X0 + 900, Y0 + 350), (X0 + 400, Y0 + 350),
@@ -185,6 +197,44 @@ SCENARIOS: tuple[Scenario, ...] = (
         transition_rows=(1, 1),
     ),
     *(_water_rule_scenario(rule) for rule in WATER_REMOVAL_RULES),
+    # Found by a random search (2026-10-28) as inputs where the head-to-toe correction
+    # changes cells; no other scenario reaches that step.
+    Scenario(
+        name="head_to_toe_circles",
+        description="Diamond-shaped areas at level 3 with transition rows (1, 2, 3); head-to-toe.",
+        domain=box(TX, TY, TX + 429.9, TY + 296.9),
+        cell_size=32.0,
+        refinement_areas=(
+            (_disc(316.4, 275.0, 44.2, 1), 3),
+            (_disc(378.9, 51.7, 59.3, 6), 1),
+            (_disc(88.9, 167.7, 46.3, 1), 3),
+        ),
+        transition_rows=(1, 2, 3),
+        water_areas=(
+            _disc(330.6, 20.1, 15.3),
+            _disc(14.0, 93.2, 10.7),
+            _disc(309.4, 135.1, 3.6),
+            _disc(427.9, 263.8, 27.7),
+        ),
+    ),
+    Scenario(
+        name="head_to_toe_boxes",
+        description="Two thin rotated boxes at level 3, transition rows (2, 1, 1); head-to-toe.",
+        domain=box(TX, TY, TX + 261.7, TY + 302.0),
+        cell_size=25.0,
+        refinement_areas=(
+            (_bar(161.9, 259.8, 23.5, 20.7, 88.5), 3),
+            (_bar(39.3, 153.8, 50.9, 12.7, 100.1), 3),
+        ),
+        transition_rows=(2, 1, 1),
+        water_areas=(
+            _disc(22.2, 62.4, 4.3),
+            _disc(186.3, 88.5, 27.2),
+            _disc(233.9, 282.8, 9.2),
+            _disc(0.2, 117.0, 29.0),
+            _disc(199.9, 18.0, 21.7),
+        ),
+    ),
 )
 
 SCENARIOS_BY_NAME = {s.name: s for s in SCENARIOS}
