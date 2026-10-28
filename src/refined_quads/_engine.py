@@ -44,7 +44,7 @@ from shapely.geometry.base import BaseGeometry
 from shapely.prepared import PreparedGeometry, prep
 
 from refined_quads._orthogonality import MAX_FM_ORTHOGONALITY, _rgfgrid_centres
-from refined_quads.errors import InputError, OrthogonalityRepairError
+from refined_quads.errors import Cancelled, InputError, OrthogonalityRepairError
 
 _log = logging.getLogger(__name__)
 
@@ -618,6 +618,7 @@ def generate_cells(
     transition_rows: Sequence[int],
     water_areas: Sequence[BaseGeometry] = (),
     water_removal: str = "centre",
+    origin: tuple[float, float] | None = None,
     progress: Progress | None = None,
 ) -> tuple[NDArray[np.float64], list[list[int]], tuple[float, float]]:
     """Generate a refined quad mesh; the input is validated by the caller.
@@ -639,6 +640,10 @@ def generate_cells(
     water_removal : {"centre", "inside", "touches"}
         Remove a cell when its centre lies in water, when it lies completely in
         water, or as soon as it touches water.
+    origin : tuple of float, optional
+        A lattice point; the base grid starts at the largest lattice point at or
+        below the lower-left corner of the domain. By default a multiple of the cell
+        size.
     progress : callable, optional
         Called with ``(percent or None, message)``; a truthy result cancels.
 
@@ -649,8 +654,8 @@ def generate_cells(
     cells : list of list of int
         Node indices per cell.
     origin : tuple of float
-        Lattice origin: the lower-left corner of the domain rounded down to a
-        multiple of the cell size.
+        Start of the base grid, a lattice point: the lower-left corner of the domain
+        rounded down to the lattice.
     """
     max_levels = levels
     # buffer_rows_by_level[lvl]: transition rows for the step from lvl to lvl + 1.
@@ -669,16 +674,20 @@ def generate_cells(
             _log.debug("[QuadRef] %s%s%s", f"{pct}% " if pct is not None else "", msg or "", suffix)
         if progress is not None:
             msg_out = (msg + suffix) if msg else (msg or "")
-            if progress(pct or 0, msg_out):
-                raise RuntimeError("Mesh generation cancelled")
+            if progress(pct, msg_out):
+                raise Cancelled("mesh generation cancelled by the progress callback")
 
     # -- domain -----------------------------------------------------------------
     bnd_shp = domain if domain.is_valid else domain.buffer(0)
     bnd_prep = prep(bnd_shp)
     minx, miny, maxx, maxy = bnd_shp.bounds
 
-    ox = math.floor(minx / cell_size) * cell_size
-    oy = math.floor(miny / cell_size) * cell_size
+    if origin is None:
+        ox = math.floor(minx / cell_size) * cell_size
+        oy = math.floor(miny / cell_size) * cell_size
+    else:
+        ox = origin[0] + math.floor((minx - origin[0]) / cell_size) * cell_size
+        oy = origin[1] + math.floor((miny - origin[1]) / cell_size) * cell_size
 
     def _to_real(ix: int, iy: int) -> tuple[float, float]:
         return ox + ix * unit, oy + iy * unit

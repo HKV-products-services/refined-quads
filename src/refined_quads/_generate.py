@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import numbers
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from typing import Any, Literal
 
 import numpy as np
@@ -32,6 +32,8 @@ def generate(
     water_areas: Iterable[BaseGeometry] | Areas | Any = (),  # noqa: ANN401
     water_removal: WaterRemovalRule = "centre",
     crs: CRS | str | int | None = None,
+    origin: tuple[float, float] | None = None,
+    progress: Callable[[float, str], object] | None = None,
 ) -> Mesh:
     """Generate a refined quad mesh over a domain.
 
@@ -67,13 +69,20 @@ def generate(
         CRS of input that carries none (shapely geometries). Input without CRS
         raises an error unless it is given; input with its own CRS is transformed to
         the CRS of the domain.
+    origin : tuple of float, optional
+        A point of the lattice, so that the mesh lines up with an existing mesh or
+        raster. By default the lower-left corner of the domain rounded down to a
+        multiple of ``cell_size``.
+    progress : callable, optional
+        Called as ``progress(fraction, message)`` while the mesh is generated, with
+        a fraction that rises from 0 to 1 and an English message. Returning ``True``
+        cancels the run.
 
     Returns
     -------
     Mesh
-        The mesh in the CRS of the domain, its faces counterclockwise, on a lattice
-        whose origin is the lower-left corner of the domain rounded down to a
-        multiple of ``cell_size``.
+        The mesh in the CRS of the domain, its faces counterclockwise, on the
+        lattice through ``origin``.
 
     Raises
     ------
@@ -83,9 +92,12 @@ def generate(
         length, a refinement area is empty or not polygonal, a level is not an
         integer of at least 1, the transition rows are not one integer of at least
         1 per level step, a water area is empty or not polygonal, the water removal
-        rule is unknown, or no cells are left inside the domain.
+        rule is unknown, the origin is not two finite numbers, or no cells are left
+        inside the domain.
     OrthogonalityRepairError
         If the orthogonality repair cannot make every internal edge FM-orthogonal.
+    Cancelled
+        If the progress callback returned ``True``.
 
     Examples
     --------
@@ -110,7 +122,9 @@ def generate(
         allowed = ", ".join(repr(rule) for rule in WATER_REMOVAL_RULES)
         raise InputError(f"water removal rule must be one of {allowed}, got {water_removal!r}")
 
-    vertices, cells, origin = generate_cells(
+    lattice_origin = None if origin is None else _origin(origin)
+
+    vertices, cells, grid_start = generate_cells(
         domain_geom,
         areas,
         cell_size=size,
@@ -118,8 +132,39 @@ def generate(
         transition_rows=rows,
         water_areas=water,
         water_removal=water_removal,
+        origin=lattice_origin,
+        progress=None if progress is None else _ProgressAdapter(progress),
     )
-    return _to_mesh(vertices, cells, Lattice(origin, size, levels), mesh_crs)
+    lattice = Lattice(lattice_origin or grid_start, size, levels)
+    return _to_mesh(vertices, cells, lattice, mesh_crs)
+
+
+class _ProgressAdapter:
+    """Turn the engine's percentages (or None) into a rising fraction and a message."""
+
+    def __init__(self, callback: Callable[[float, str], object]) -> None:
+        self._callback = callback
+        self._fraction = 0.0
+        self._message = "Starting"
+
+    def __call__(self, percent: int | None, message: str) -> bool:
+        if percent is not None:
+            self._fraction = max(self._fraction, min(percent, 100) / 100.0)
+        if message:
+            self._message = message
+        return self._callback(self._fraction, self._message) is True
+
+
+def _origin(value: object) -> tuple[float, float]:
+    parts = list(value) if isinstance(value, Iterable) and not isinstance(value, str) else []
+    if len(parts) != 2 or not all(
+        isinstance(v, numbers.Real) and not isinstance(v, bool) for v in parts
+    ):
+        raise InputError(f"origin must be two numbers (x, y), got {value!r}")
+    point = (float(parts[0]), float(parts[1]))
+    if not all(math.isfinite(v) for v in point):
+        raise InputError(f"origin must be finite, got {value!r}")
+    return point
 
 
 def domain_holes(domain: BaseGeometry) -> list[BaseGeometry]:

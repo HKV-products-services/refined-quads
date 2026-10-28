@@ -132,7 +132,7 @@ def test_missing_toml_file_exits_2(tmp_path, capsys):
 
 
 def test_failed_run_exits_1(run_dir, capsys, monkeypatch):
-    def fail(self):
+    def fail(self, progress=None):
         raise OrthogonalityRepairError("orthogonality repair did not close", [(1.0, 2.0, 0.5)])
 
     monkeypatch.setattr(MeshSpec, "generate", fail)
@@ -188,3 +188,30 @@ def test_fixed_level_and_a_single_table_for_water(run_dir):
     mesh = spec.generate()
     assert max(check(mesh).cells_per_level) == 2
     assert not shapely.contains(WATER[0], shapely.points(mesh.nodes)).all()
+
+
+def test_origin_from_the_toml_and_the_option(run_dir):
+    (run_dir / "run.toml").write_text("origin = [3.125, 12.5]\n" + SPEC, encoding="utf-8")
+    from_toml, from_option = run_dir / "a.nc", run_dir / "b.nc"
+
+    main(["generate", str(run_dir / "run.toml"), "-o", str(from_toml)])
+    main(["generate", str(run_dir / "run.toml"), "-o", str(from_option), "--origin", "0", "0"])
+
+    assert MeshSpec.from_toml(run_dir / "run.toml").origin == (3.125, 12.5)
+    assert read_ugrid(from_toml).nodes[:, 0].min() % 25.0 == pytest.approx(3.125)
+    assert read_ugrid(from_option).nodes[:, 0].min() % 25.0 == pytest.approx(0.0, abs=1e-6)
+
+
+def test_invalid_origin_in_the_toml_exits_2(run_dir, capsys):
+    (run_dir / "run.toml").write_text("origin = [1]\n" + SPEC, encoding="utf-8")
+
+    assert main(["generate", str(run_dir / "run.toml"), "-o", str(run_dir / "x.nc")]) == 2
+    assert "origin: must be two finite numbers" in capsys.readouterr().err
+
+
+def test_verbose_prints_progress_to_stderr(run_dir, capsys):
+    main(["generate", str(run_dir / "run.toml"), "-o", str(run_dir / "m.nc"), "-v"])
+
+    err = capsys.readouterr().err
+    assert "Quad Grid: base grid" in err
+    assert "100% Quad Grid: done" in err

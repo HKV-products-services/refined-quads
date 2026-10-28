@@ -42,6 +42,14 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 - Command line: `refined-quads generate run.toml -o mesh_net.nc` (options override the
   TOML values) and `refined-quads info mesh_net.nc` (lattice, cells per level and the
   checks). Exit codes: 0 success, 1 the run failed, 2 invalid input or arguments.
+- `generate(..., origin=(x, y))` (also `origin` in the TOML and `--origin X Y`): a
+  point of the lattice, so a mesh lines up with an existing mesh or raster; by
+  default the lower-left corner of the domain rounded down to a multiple of the cell
+  size, as before.
+- `generate(..., progress=callback)`: `callback(fraction, message)` with a fraction
+  rising from 0 to 1 and English messages; returning `True` cancels the run with
+  `Cancelled` (the old generator raised a `RuntimeError`). `refined-quads generate -v`
+  prints the progress.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 

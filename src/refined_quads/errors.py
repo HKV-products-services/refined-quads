@@ -7,6 +7,10 @@ class InputError(ValueError):
     """Invalid input: the package raises this instead of silently adjusting the input."""
 
 
+class Cancelled(Exception):
+    """The run was cancelled through the progress callback."""
+
+
 class OrthogonalityRepairError(RuntimeError):
     """The orthogonality repair could not make every internal edge FM-orthogonal.
 

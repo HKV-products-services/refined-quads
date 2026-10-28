@@ -10,7 +10,7 @@ from refined_quads._check import MeshReport, check
 from refined_quads._generate import generate
 from refined_quads._gis import Areas, read_domain, read_refinement_areas, read_water_areas
 from refined_quads._ugrid import read_ugrid, write_ugrid
-from refined_quads.errors import InputError, OrthogonalityRepairError
+from refined_quads.errors import Cancelled, InputError, OrthogonalityRepairError
 from refined_quads.mesh import Lattice, Mesh
 from refined_quads.spec import LayerSource, MeshSpec, RefinementSource
 
@@ -21,6 +21,7 @@ except PackageNotFoundError:  # running from a source tree that is not installed
 
 __all__ = [
     "Areas",
+    "Cancelled",
     "InputError",
     "Lattice",
     "LayerSource",

@@ -73,6 +73,9 @@ class MeshSpec:
         Water removal rule: ``"centre"``, ``"inside"`` or ``"touches"``.
     crs : str or None
         CRS of layers that have none.
+    origin : tuple of float or None
+        A lattice point, ``[x, y]`` in the TOML; by default a multiple of the cell
+        size.
     output : pathlib.Path or None
         UGRID file to write.
 
@@ -106,6 +109,7 @@ class MeshSpec:
     water_areas: tuple[LayerSource, ...] = ()
     water_removal: str = "centre"
     crs: str | None = None
+    origin: tuple[float, float] | None = None
     output: Path | None = None
 
     @classmethod
@@ -182,6 +186,7 @@ class MeshSpec:
             ),
             water_removal=_rule(data.get("water_removal", "centre"), "water_removal"),
             crs=_optional_str(data.get("crs"), "crs"),
+            origin=_point(data.get("origin"), "origin"),
             output=None if output is None else base_dir / _string(output, "output"),
         )
 
@@ -192,7 +197,7 @@ class MeshSpec:
         ----------
         **changes
             New values for ``cell_size``, ``transition_rows``, ``water_removal``,
-            ``crs`` or ``output``.
+            ``crs``, ``origin`` or ``output``.
 
         Returns
         -------
@@ -209,6 +214,7 @@ class MeshSpec:
             "transition_rows": _rows,
             "water_removal": _rule,
             "crs": _optional_str,
+            "origin": _point,
             "output": _output,
         }
         unknown = set(changes) - set(checks)
@@ -217,8 +223,13 @@ class MeshSpec:
         new: dict[str, Any] = {k: checks[k](v, k) for k, v in changes.items()}
         return replace(self, **new)
 
-    def generate(self) -> Mesh:
+    def generate(self, progress: Callable[[float, str], object] | None = None) -> Mesh:
         """Read the layers and generate the mesh.
+
+        Parameters
+        ----------
+        progress : callable, optional
+            Progress callback, as for :func:`generate`.
 
         Returns
         -------
@@ -251,6 +262,8 @@ class MeshSpec:
             transition_rows=self.transition_rows,
             water_areas=_combine(water, domain, with_levels=False),
             water_removal=cast("WaterRemovalRule", self.water_removal),
+            origin=self.origin,
+            progress=progress,
         )
 
 
@@ -334,6 +347,17 @@ def _string(value: object, key: str) -> str:
 
 def _optional_str(value: object, key: str) -> str | None:
     return None if value is None else _string(value, key)
+
+
+def _point(value: object, key: str) -> tuple[float, float] | None:
+    if value is None:
+        return None
+    parts = list(value) if isinstance(value, list | tuple) else []
+    if len(parts) != 2 or not all(
+        isinstance(v, numbers.Real) and not isinstance(v, bool) and math.isfinite(v) for v in parts
+    ):
+        raise InputError(f"{key}: must be two finite numbers [x, y], got {value!r}")
+    return float(parts[0]), float(parts[1])
 
 
 def _output(value: object, key: str) -> Path | None:

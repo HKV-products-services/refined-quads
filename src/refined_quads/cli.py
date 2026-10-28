@@ -55,6 +55,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gen.add_argument("--water-removal", choices=WATER_REMOVAL_RULES, help="water removal rule")
     gen.add_argument("--crs", help="CRS of layers without one (overrides 'crs')")
+    gen.add_argument(
+        "--origin",
+        type=float,
+        nargs=2,
+        metavar=("X", "Y"),
+        help="a lattice point (overrides 'origin')",
+    )
+    gen.add_argument("-v", "--verbose", action="store_true", help="show progress messages")
 
     info = commands.add_parser(
         "info",
@@ -114,13 +122,14 @@ def _generate(args: argparse.Namespace) -> int:
         ),
         "water_removal": args.water_removal,
         "crs": args.crs,
+        "origin": None if args.origin is None else tuple(args.origin),
         "output": args.output,
     }
     spec = spec.replace(**{k: v for k, v in overrides.items() if v is not None})
     if spec.output is None:
         raise InputError("no output file: give -o/--output or 'output' in the TOML file")
     try:
-        mesh = spec.generate()
+        mesh = spec.generate(progress=_print_progress if args.verbose else None)
     except InputError as exc:
         raise InputError(f"{args.spec}: {exc}") from exc
     write_ugrid(mesh, spec.output)
@@ -128,6 +137,10 @@ def _generate(args: argparse.Namespace) -> int:
     print(f"wrote {spec.output}")
     print(report.summary())
     return EXIT_OK
+
+
+def _print_progress(fraction: float, message: str) -> None:
+    print(f"{fraction:4.0%} {message}", file=sys.stderr)
 
 
 def _info(args: argparse.Namespace) -> int:
