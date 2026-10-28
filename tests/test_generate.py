@@ -12,20 +12,15 @@ DOMAIN = box(0, 0, 400, 300)
 AREA = Point(200, 150).buffer(40)
 
 
-def _scenario_params():
-    skip_water = pytest.mark.skip(reason="water areas are exposed in generate by issue 05")
-    return [
-        pytest.param(s, id=s.name, marks=[skip_water] if s.water_areas else []) for s in SCENARIOS
-    ]
-
-
-@pytest.mark.parametrize("scenario", _scenario_params())
+@pytest.mark.parametrize("scenario", SCENARIOS, ids=[s.name for s in SCENARIOS])
 def test_generate_gives_the_cells_of_the_golden_master(scenario):
     mesh = generate(
         scenario.domain,
         cell_size=scenario.cell_size,
         refinement_areas=scenario.refinement_areas,
         transition_rows=scenario.transition_rows,
+        water_areas=scenario.water_areas,
+        water_removal=scenario.water_removal,
     )
 
     assert_same_cells(mesh, load_master(MASTERS_DIR / f"{scenario.name}.npz").to_mesh())

@@ -25,6 +25,13 @@ The fixed grid of points, given by an origin and the base cell size, on which
 every square of a refined quad mesh has its corners.
 _Avoid_: raster, grid origin
 
+**Lattice square**:
+A square of the quadtree: a base cell or one of the squares its halving gives,
+aligned to the lattice at its refinement level. It becomes one square cell, or is
+filled exactly by transition cells; the water removal rule judges whole lattice
+squares.
+_Avoid_: parent square, quadtree cell, leaf
+
 **Transition rows**:
 For the step from refinement level k+1 down to level k, the number of rows of
 level-(k+1) cells kept around the finer area before the mesh coarsens; at least 1.

@@ -21,6 +21,9 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   engine of the generator at qgis_dhydamo `9a324bc`; it gives the same cells for the
   same input (golden masters).
 - `OrthogonalityRepairError` when the orthogonality repair does not close.
+- Water areas in `generate` (`water_areas`, `water_removal`) with three water removal
+  rules: `"centre"` (default), `"inside"` and `"touches"`.
+- `MeshReport.cell_levels`: the refinement level of the lattice square of every cell.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 
@@ -36,3 +39,6 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   `max_refinement`. A level that is not an integer of at least 1 raises `InputError`
   instead of being clamped.
 - Explicit refine zones without transition rows and support for shapely < 2 are gone.
+- Water areas that are given are always applied; there is no `clip_water` switch that
+  silently ignored them. An unknown water removal rule raises `InputError` instead of
+  falling back to the centre rule.

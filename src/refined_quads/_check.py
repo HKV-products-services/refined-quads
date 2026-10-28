@@ -30,6 +30,9 @@ class MeshReport:
     cells_per_level : dict of int to int
         Number of cells per refinement level; a transition cell counts at the level
         of the lattice square it lies in.
+    cell_levels : numpy.ndarray of int, shape (m,)
+        Refinement level of the lattice square each cell lies in; -1 for unrecognised
+        cells.
     off_lattice_nodes : numpy.ndarray of float, shape (k, 2)
         Nodes that are not lattice points.
     hanging_nodes : numpy.ndarray of float, shape (k, 2)
@@ -57,6 +60,7 @@ class MeshReport:
     n_nodes: int
     n_cells: int
     cells_per_level: dict[int, int]
+    cell_levels: NDArray[np.int64]
     off_lattice_nodes: NDArray[np.float64]
     hanging_nodes: NDArray[np.float64]
     balance_violations: NDArray[np.float64]
@@ -156,6 +160,7 @@ def check(mesh: Mesh) -> MeshReport:
         n_nodes=len(used),
         n_cells=len(faces),
         cells_per_level={int(lv): int(n) for lv, n in zip(levels, counts, strict=True)},
+        cell_levels=squares.face_level,
         off_lattice_nodes=mesh.nodes[off_lattice],
         hanging_nodes=mesh.nodes[hanging],
         balance_violations=np.asarray(lattice.origin) + violations * (lattice.unit / 2.0),

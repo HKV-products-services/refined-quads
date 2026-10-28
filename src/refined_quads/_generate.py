@@ -5,16 +5,19 @@ from __future__ import annotations
 import math
 import numbers
 from collections.abc import Iterable, Sequence
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._engine import generate_cells
+from refined_quads._engine import WATER_REMOVAL_RULES, generate_cells
 from refined_quads.errors import InputError
 from refined_quads.mesh import Lattice, Mesh
 
 _POLYGONAL = ("Polygon", "MultiPolygon")
+
+WaterRemovalRule = Literal["centre", "inside", "touches"]
 
 
 def generate(
@@ -23,6 +26,8 @@ def generate(
     cell_size: float,
     refinement_areas: Iterable[tuple[BaseGeometry, int]] = (),
     transition_rows: int | Sequence[int] = 1,
+    water_areas: Iterable[BaseGeometry] = (),
+    water_removal: WaterRemovalRule = "centre",
 ) -> Mesh:
     """Generate a refined quad mesh over a domain.
 
@@ -40,6 +45,15 @@ def generate(
         Rows of finer cells kept around a finer area before the mesh coarsens, per
         step from coarse to fine: the first value is for the step from level 0 to 1.
         One value per level step, or a single value for every step; each at least 1.
+    water_areas : iterable of shapely geometry
+        Polygons where no cells are kept, because the 1D network carries the flow
+        there. Giving water areas applies them.
+    water_removal : {"centre", "inside", "touches"}
+        Water removal rule: whether a lattice square touching a water area is removed
+        when its centre lies in water (default), only when it lies completely in
+        water, or as soon as it touches water. The rule is applied to the squares
+        before transition cells are formed, so all cells of a square stay or go
+        together.
 
     Returns
     -------
@@ -52,8 +66,9 @@ def generate(
     InputError
         If the domain is empty or not polygonal, the cell size is not a positive
         length, a refinement area is empty or not polygonal, a level is not an
-        integer of at least 1, or the transition rows are not one integer of at least
-        1 per level step.
+        integer of at least 1, the transition rows are not one integer of at least
+        1 per level step, a water area is empty or not polygonal, the water removal
+        rule is unknown, or no cells are left inside the domain.
     OrthogonalityRepairError
         If the orthogonality repair cannot make every internal edge FM-orthogonal.
 
@@ -74,9 +89,21 @@ def generate(
     areas = [_refinement_area(item, i) for i, item in enumerate(refinement_areas)]
     levels = max((level for _, level in areas), default=0)
     rows = _transition_rows(transition_rows, levels)
+    water = list(water_areas)
+    for i, geom in enumerate(water):
+        _check_polygonal(geom, f"water area {i}")
+    if water_removal not in WATER_REMOVAL_RULES:
+        allowed = ", ".join(repr(rule) for rule in WATER_REMOVAL_RULES)
+        raise InputError(f"water removal rule must be one of {allowed}, got {water_removal!r}")
 
     vertices, cells, origin = generate_cells(
-        domain, areas, cell_size=size, levels=levels, transition_rows=rows
+        domain,
+        areas,
+        cell_size=size,
+        levels=levels,
+        transition_rows=rows,
+        water_areas=water,
+        water_removal=water_removal,
     )
     return _to_mesh(vertices, cells, Lattice(origin, size, levels))
 
