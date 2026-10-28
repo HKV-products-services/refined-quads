@@ -25,6 +25,7 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 | --- | --- |
 | Install | `uv sync` |
 | Fast tests | `uv run pytest` (slow/benchmark/realdata via `-m <marker>`) |
+| Benchmarks | `uv run pytest -m benchmark --benchmark-json=after.json`, then `uv run python tests/golden/benchmarks.py after.json --baseline before.json` (5% rule: measure before and after back to back on one machine) |
 | Lint / format | `uv run ruff check`, `uv run ruff format` |
 | Types | `uv run mypy` |
 | Docs | `uv run mkdocs build --strict` / `uv run mkdocs serve` |

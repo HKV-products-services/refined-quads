@@ -55,6 +55,10 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   `<output>_raw.nc` and `<output>_problems.gpkg` (layer `orthogonality_problems`,
   field `orth_e`, -1 for a degenerate edge) in the CRS of the mesh and exits with 1; a
   failure to write them is reported without hiding the repair error.
+- Benchmarks (`pytest -m benchmark`, pytest-benchmark) on three golden-master
+  scenarios, and `tests/golden/benchmarks.py` to compare results with a baseline and
+  report changes above 5%. CI runs slow tests and benchmarks on main and compares with
+  the previous run on main; results are kept as artifact.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 

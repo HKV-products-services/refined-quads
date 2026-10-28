@@ -46,6 +46,43 @@ jobs:
       - run: uv sync --locked --no-group docs
       - run: uv run pytest
 
+  slow:
+    name: Slow tests and benchmarks
+    # Only on main: the baseline is the previous run on main, on the same runner type.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --no-group docs
+      - name: Restore the benchmark results of the previous run on main
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmark-baseline.json
+          key: benchmarks-${{ github.sha }}
+          restore-keys: benchmarks-
+      - run: uv run pytest -m "slow or benchmark" --benchmark-json=benchmark.json
+      - name: Compare with the previous run (warns above +5%)
+        run: |
+          if [ -f benchmark-baseline.json ]; then
+            uv run python tests/golden/benchmarks.py benchmark.json --baseline benchmark-baseline.json
+          else
+            echo "No earlier benchmark results on main yet; this run becomes the baseline."
+          fi
+      - run: cp benchmark.json benchmark-baseline.json
+      - uses: actions/cache/save@v4
+        with:
+          path: benchmark-baseline.json
+          key: benchmarks-${{ github.sha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks-${{ github.sha }}
+          path: benchmark.json
+
   docs:
     name: Documentation
     runs-on: ubuntu-latest
