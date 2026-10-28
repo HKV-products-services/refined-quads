@@ -5,15 +5,18 @@ from __future__ import annotations
 import math
 import numbers
 from collections.abc import Iterable, Sequence
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
+import shapely
 from numpy.typing import NDArray
+from pyproj import CRS
 from shapely.geometry.base import BaseGeometry
 
 from refined_quads._engine import WATER_REMOVAL_RULES, generate_cells
+from refined_quads._gis import Areas, frame_areas, is_frame
 from refined_quads.errors import InputError
-from refined_quads.mesh import Lattice, Mesh
+from refined_quads.mesh import Lattice, Mesh, projected_crs
 
 _POLYGONAL = ("Polygon", "MultiPolygon")
 
@@ -21,32 +24,37 @@ WaterRemovalRule = Literal["centre", "inside", "touches"]
 
 
 def generate(
-    domain: BaseGeometry,
+    domain: BaseGeometry | Areas | Any,  # noqa: ANN401 (a GeoDataFrame without geopandas)
     *,
     cell_size: float,
-    refinement_areas: Iterable[tuple[BaseGeometry, int]] = (),
+    refinement_areas: Iterable[tuple[BaseGeometry, int]] | Areas = (),
     transition_rows: int | Sequence[int] = 1,
-    water_areas: Iterable[BaseGeometry] = (),
+    water_areas: Iterable[BaseGeometry] | Areas | Any = (),  # noqa: ANN401
     water_removal: WaterRemovalRule = "centre",
+    crs: CRS | str | int | None = None,
 ) -> Mesh:
     """Generate a refined quad mesh over a domain.
 
     Parameters
     ----------
-    domain : shapely.Polygon or shapely.MultiPolygon
-        The area the mesh covers. A lattice square is kept whole when it overlaps
-        the domain, so cells along the boundary may reach slightly outside it.
+    domain : shapely.Polygon, shapely.MultiPolygon, Areas or GeoDataFrame
+        The area the mesh covers; its CRS is the CRS of the mesh and must be
+        projected. A lattice square is kept whole when it overlaps the domain, so
+        cells along the outer edge may reach slightly outside it. Holes in the domain
+        are treated as water areas: the water removal rule decides which lattice
+        squares along a hole are removed.
     cell_size : float
         Side length of the base cell; any positive length.
-    refinement_areas : iterable of (shapely geometry, int)
-        Polygons paired with the refinement level their cells must reach (1 or
-        higher); level ``L`` gives cells of ``cell_size / 2**L``. The highest level
-        among the areas is the highest level of the mesh.
+    refinement_areas : iterable of (shapely geometry, int), or Areas
+        Polygons (pairs, or :func:`read_refinement_areas`) paired with the
+        refinement level their cells must reach (1 or higher); level ``L`` gives
+        cells of ``cell_size / 2**L``. The highest level among the areas is the
+        highest level of the mesh.
     transition_rows : int or sequence of int
         Rows of finer cells kept around a finer area before the mesh coarsens, per
         step from coarse to fine: the first value is for the step from level 0 to 1.
         One value per level step, or a single value for every step; each at least 1.
-    water_areas : iterable of shapely geometry
+    water_areas : iterable of shapely geometry, Areas or GeoDataFrame
         Polygons where no cells are kept, because the 1D network carries the flow
         there. Giving water areas applies them.
     water_removal : {"centre", "inside", "touches"}
@@ -55,17 +63,23 @@ def generate(
         water, or as soon as it touches water. The rule is applied to the squares
         before transition cells are formed, so all cells of a square stay or go
         together.
+    crs : pyproj.CRS or str or int, optional
+        CRS of input that carries none (shapely geometries). Input without CRS
+        raises an error unless it is given; input with its own CRS is transformed to
+        the CRS of the domain.
 
     Returns
     -------
     Mesh
-        The mesh, its faces counterclockwise, on a lattice whose origin is the
-        lower-left corner of the domain rounded down to a multiple of ``cell_size``.
+        The mesh in the CRS of the domain, its faces counterclockwise, on a lattice
+        whose origin is the lower-left corner of the domain rounded down to a
+        multiple of ``cell_size``.
 
     Raises
     ------
     InputError
-        If the domain is empty or not polygonal, the cell size is not a positive
+        If input has no CRS and ``crs`` is not given, the CRS of the domain is
+        geographic, the domain is empty or not polygonal, the cell size is not a positive
         length, a refinement area is empty or not polygonal, a level is not an
         integer of at least 1, the transition rows are not one integer of at least
         1 per level step, a water area is empty or not polygonal, the water removal
@@ -81,24 +95,23 @@ def generate(
     ...     cell_size=25.0,
     ...     refinement_areas=[(Point(200, 150).buffer(40), 2)],
     ...     transition_rows=[1, 1],
+    ...     crs="EPSG:28992",
     ... )
     >>> mesh.lattice.unit
     6.25
     """
-    _check_polygonal(domain, "domain")
+    domain_geom, mesh_crs = _domain(domain, crs)
     size = _positive_length(cell_size)
-    areas = [_refinement_area(item, i) for i, item in enumerate(refinement_areas)]
+    areas = _refinement_areas(refinement_areas, crs, mesh_crs)
     levels = max((level for _, level in areas), default=0)
     rows = _transition_rows(transition_rows, levels)
-    water = list(water_areas)
-    for i, geom in enumerate(water):
-        _check_polygonal(geom, f"water area {i}")
+    water = _water_areas(water_areas, crs, mesh_crs) + domain_holes(domain_geom)
     if water_removal not in WATER_REMOVAL_RULES:
         allowed = ", ".join(repr(rule) for rule in WATER_REMOVAL_RULES)
         raise InputError(f"water removal rule must be one of {allowed}, got {water_removal!r}")
 
     vertices, cells, origin = generate_cells(
-        domain,
+        domain_geom,
         areas,
         cell_size=size,
         levels=levels,
@@ -106,10 +119,97 @@ def generate(
         water_areas=water,
         water_removal=water_removal,
     )
-    return _to_mesh(vertices, cells, Lattice(origin, size, levels))
+    return _to_mesh(vertices, cells, Lattice(origin, size, levels), mesh_crs)
 
 
-def _to_mesh(vertices: NDArray[np.float64], cells: list[list[int]], lattice: Lattice) -> Mesh:
+def domain_holes(domain: BaseGeometry) -> list[BaseGeometry]:
+    """Return the holes of a domain as polygons, without the domain parts inside them.
+
+    Parameters
+    ----------
+    domain : shapely.Polygon or shapely.MultiPolygon
+        The domain.
+
+    Returns
+    -------
+    list of shapely geometry
+        One polygon per hole; an island of the domain inside a hole is cut out of it.
+    """
+    parts = shapely.get_parts(domain)
+    if not any(len(part.interiors) for part in parts):
+        return []
+    shells = shapely.union_all(shapely.polygons(shapely.get_exterior_ring(parts)))
+    holes = shapely.difference(shells, domain)
+    return [hole for hole in shapely.get_parts(holes) if hole.area > 0]
+
+
+def _domain(value: object, crs: object) -> tuple[BaseGeometry, CRS]:
+    """Return the domain as one geometry and the CRS of the mesh."""
+    if isinstance(value, Areas) or is_frame(value):
+        areas = value if isinstance(value, Areas) else frame_areas(value, crs, "domain")
+        geoms = np.asarray(areas.geometries, dtype=object)
+        geom = geoms[0] if len(geoms) == 1 else shapely.union_all(geoms)
+        own_crs: object = areas.crs
+    else:
+        geom = value
+        own_crs = crs
+    _check_polygonal(geom, "domain")
+    if own_crs is None:
+        raise InputError("the domain has no CRS; pass crs= to say which CRS it is in")
+    return geom, projected_crs(own_crs)
+
+
+def _refinement_areas(value: object, crs: object, mesh_crs: CRS) -> list[tuple[BaseGeometry, int]]:
+    if is_frame(value):
+        raise InputError(
+            "refinement areas from a GeoDataFrame need their levels: use "
+            "read_refinement_areas(frame, level=...)"
+        )
+    if isinstance(value, Areas):
+        if value.levels is None:
+            raise InputError(
+                "refinement areas need a level per polygon: use "
+                "read_refinement_areas(..., level=...)"
+            )
+        pairs = list(zip(value.to_crs(mesh_crs).geometries, value.levels, strict=True))
+        return [_refinement_area(item, i) for i, item in enumerate(pairs)]
+    if not isinstance(value, Iterable):
+        raise InputError(f"refinement areas must be (geometry, level) pairs, got {value!r}")
+    pairs = [_refinement_area(item, i) for i, item in enumerate(value)]
+    if not pairs:
+        return []
+    geoms, levels = zip(*pairs, strict=True)
+    return list(zip(_in_mesh_crs(geoms, crs, mesh_crs, "refinement areas"), levels, strict=True))
+
+
+def _water_areas(value: object, crs: object, mesh_crs: CRS) -> list[BaseGeometry]:
+    if isinstance(value, Areas) or is_frame(value):
+        areas = value if isinstance(value, Areas) else frame_areas(value, crs, "water areas")
+        geoms = list(areas.to_crs(mesh_crs).geometries)
+    elif isinstance(value, Iterable):
+        geoms = list(value)
+        for i, geom in enumerate(geoms):
+            _check_polygonal(geom, f"water area {i}")
+        return _in_mesh_crs(geoms, crs, mesh_crs, "water areas") if geoms else []
+    else:
+        raise InputError(f"water areas must be polygons, got {value!r}")
+    for i, geom in enumerate(geoms):
+        _check_polygonal(geom, f"water area {i}")
+    return geoms
+
+
+def _in_mesh_crs(
+    geoms: Sequence[BaseGeometry], crs: object, mesh_crs: CRS, what: str
+) -> list[BaseGeometry]:
+    """Geometries without own CRS, given in ``crs``, transformed to the mesh CRS."""
+    if crs is None:
+        raise InputError(f"the {what} have no CRS; pass crs= to say which CRS they are in")
+    return list(Areas(tuple(geoms), CRS.from_user_input(crs)).to_crs(mesh_crs).geometries)
+
+
+def _to_mesh(
+    vertices: NDArray[np.float64], cells: list[list[int]], lattice: Lattice, crs: CRS
+) -> Mesh:
     """Build a mesh of the used nodes, every face counterclockwise."""
     sizes = np.fromiter((len(cell) for cell in cells), dtype=np.int64, count=len(cells))
     flat = np.fromiter((v for cell in cells for v in cell), dtype=np.int64, count=int(sizes.sum()))
@@ -127,7 +227,7 @@ def _to_mesh(vertices: NDArray[np.float64], cells: list[list[int]], lattice: Lat
         ).sum(axis=1)
         clockwise = group[area2 < 0]
         faces[clockwise, :n] = faces[clockwise, n - 1 :: -1]
-    return Mesh(nodes, faces, lattice)
+    return Mesh(nodes, faces, lattice, crs=crs)
 
 
 def _check_polygonal(geom: object, what: str) -> None:

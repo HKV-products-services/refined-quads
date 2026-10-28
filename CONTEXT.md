@@ -56,7 +56,12 @@ _Avoid_: diff, mapping, splice
 ## Input
 
 **Domain**:
-The area the mesh covers; cells are clipped to it.
+The (multi)polygon that encloses the mesh and forms its edges (the enclosure in
+D-HYDRO terms); usually a polygon layer of a GeoPackage, whose features are merged. A
+lattice square that overlaps it is kept whole, so the outer edge of the mesh follows
+the lattice along the domain rather than the polygon exactly. Holes in the domain get
+no cells: they are treated as water areas, so the water removal rule decides which
+lattice squares along a hole go.
 _Avoid_: boundary, extent, model area
 
 **Refinement area**:
@@ -69,6 +74,7 @@ An area where no 2D cells are kept, because the 1D network carries the flow ther
 _Avoid_: water polygon, exclusion area, clip area
 
 **Water removal rule**:
-The test that decides whether a cell touching a water area is removed: by its
-centre, only when fully inside, or as soon as it touches.
+The test that decides whether a lattice square touching a water area (or a hole in
+the domain) is removed: by its centre, only when fully inside, or as soon as it
+touches. All cells of the square stay or go together.
 _Avoid_: delete option, clip method

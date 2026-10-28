@@ -33,16 +33,16 @@
       "seconds": 0.1331
     },
     "domain_with_hole": {
-      "cells": 867,
-      "median_seconds": 0.0618,
+      "cells": 829,
+      "median_seconds": 0.0603,
       "runs": 3,
-      "seconds": 0.0577
+      "seconds": 0.0564
     },
     "l_shaped_domain": {
       "cells": 1006,
-      "median_seconds": 0.0634,
+      "median_seconds": 0.079,
       "runs": 3,
-      "seconds": 0.0575
+      "seconds": 0.0664
     },
     "many_small_water_areas": {
       "cells": 2326,

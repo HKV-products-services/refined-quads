@@ -2,9 +2,15 @@
 
 import numpy as np
 
-from refined_quads import Lattice, Mesh
+from refined_quads import Lattice, Mesh, generate
 
 ORIGIN = (1000.0, 2000.0)
+RD = "EPSG:28992"
+
+
+def generate_rd(*args, **kwargs):
+    """generate() with shapely input in RD New (the golden-master coordinates)."""
+    return generate(*args, crs=RD, **kwargs)
 
 
 def mesh_from_cells(cells, *, cell_size=4.0, levels=1, unit_coordinates=1.0):

@@ -144,8 +144,23 @@ def legacy_params(cell_size, levels, transition_rows, water_removal):
     }
 
 
+def domain_holes(domain):
+    """Holes of the domain as polygons (islands inside a hole cut out)."""
+    import shapely
+
+    parts = shapely.get_parts(domain)
+    shells = shapely.union_all(shapely.polygons(shapely.get_exterior_ring(parts)))
+    return [h for h in shapely.get_parts(shapely.difference(shells, domain)) if h.area > 0]
+
+
 def run_legacy(engine, scenario: Scenario, repeat: int):
-    """Run the legacy generator; return its output and the best runtime of ``repeat`` runs."""
+    """Run the legacy generator; return its output and the best runtime of ``repeat`` runs.
+
+    Holes in the domain are given to the legacy generator as extra water areas: this
+    package treats them as water areas (an intended change; the legacy generator kept
+    every lattice square that overlaps the domain, also inside a hole), and with them
+    as water areas the legacy generator gives the same cells.
+    """
     params = legacy_params(
         scenario.cell_size, scenario.levels, scenario.transition_rows, scenario.water_removal
     )
@@ -154,7 +169,7 @@ def run_legacy(engine, scenario: Scenario, repeat: int):
         t0 = time.perf_counter()
         vertices, cells = engine.generate_quad_refinement_mesh(
             scenario.domain,
-            list(scenario.water_areas),
+            [*scenario.water_areas, *domain_holes(scenario.domain)],
             [(g, level) for g, level in scenario.refinement_areas],
             dict(params),
         )

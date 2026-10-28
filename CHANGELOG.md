@@ -30,9 +30,20 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   derives the lattice from the square cells.
 - `Mesh.crs`: the projected CRS of a mesh, or `None` when unknown; a geographic CRS
   raises `InputError`.
+- `read_domain`, `read_refinement_areas` (level from a column or one fixed level) and
+  `read_water_areas`: read a GeoPackage or shapefile layer with pyogrio, or take a
+  GeoDataFrame (geopandas is not a dependency), into `Areas` (polygons with a CRS).
+- `generate` takes `Areas` and GeoDataFrames and has a `crs` parameter for input
+  without CRS. The mesh gets the CRS of the domain; other input is transformed to it.
+- `write_ugrid` derives the CRS attributes of CRSs other than EPSG:28992 with pyproj.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 
+- Intended output change: holes in the domain are treated as water areas, with the
+  water removal rule. The old generator kept every lattice square that overlaps the
+  domain, so cells reached into a hole (in the golden-master scenario 84 cells, 15% of
+  the hole); with the default rule `"centre"` no square with its centre in a hole is
+  kept. The golden master `domain_with_hole` is recorded with the hole as a water area.
 - Intended output change: no minimum cell size. A 24 m base cell asked for level 5 now
   gives 0.75 m cells; the old generator capped the levels so that the smallest cell
   was at least 1 m (4 levels, 1.5 m).
@@ -49,5 +60,11 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   silently ignored them. An unknown water removal rule raises `InputError` instead of
   falling back to the centre rule.
 - `write_ugrid` writes the CRS of the mesh instead of always EPSG:28992: a mesh without
-  CRS gets no CRS variable, and CRSs other than EPSG:28992 are not supported yet. The
-  `source` attribute names refined-quads and its version.
+  CRS gets no CRS variable. The `source` attribute names refined-quads and its version.
+- No CRS is ever assumed: input without CRS (a layer, a GeoDataFrame or shapely
+  geometries) raises `InputError` unless `crs=` is given, and a geographic domain CRS
+  raises `InputError` (the old generator read a layer without CRS as RD New and
+  transformed everything else to RD New). A layer whose CRS contradicts `crs=` raises
+  `InputError`, as do a missing or invalid level (naming the feature), a feature
+  without geometry or that is not a polygon, and a file with several layers when no
+  layer is named.

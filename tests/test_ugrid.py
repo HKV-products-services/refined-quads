@@ -9,8 +9,8 @@ from shapely import Point, box
 from golden.compare import assert_same_cells
 from golden.masters import MASTERS_DIR, load_master
 from golden.scenarios import SCENARIOS
-from handmade import CLEAN, mesh_from_cells
-from refined_quads import InputError, Mesh, check, generate, read_ugrid, write_ugrid
+from handmade import CLEAN, generate_rd, mesh_from_cells
+from refined_quads import InputError, Mesh, check, read_ugrid, write_ugrid
 
 # CLEAN with a plain base cell to its left, so that the base cell can be derived.
 WITH_BASE_CELL = [[(-4, 0), (0, 0), (0, 4), (-4, 4)], *CLEAN]
@@ -110,11 +110,24 @@ def test_mesh_without_crs_is_written_without_crs_variable(tmp_path):
     assert read_ugrid(path).crs is None
 
 
-def test_other_crs_is_not_written_yet(tmp_path):
+def test_other_crs_gets_attributes_derived_with_pyproj(tmp_path):
     mesh = dataclasses.replace(rd_master("l_shaped_domain"), crs="EPSG:32631")
+    path = tmp_path / "mesh.nc"
 
-    with pytest.raises(NotImplementedError, match="EPSG:28992"):
-        write_ugrid(mesh, tmp_path / "mesh.nc")
+    write_ugrid(mesh, path)
+
+    with netCDF4.Dataset(path) as ds, netCDF4.Dataset(LEGACY_FILE) as old:
+        var = ds["projected_coordinate_system"]
+        old_var = old["projected_coordinate_system"]
+        assert var.ncattrs() == old_var.ncattrs()
+        for name in old_var.ncattrs():
+            assert type(var.getncattr(name)) is type(old_var.getncattr(name)), name
+        assert int(var[...]) == var.getncattr("epsg") == 32631
+        assert var.getncattr("EPSG_code") == "EPSG:32631"
+        assert var.getncattr("name") == "WGS 84 / UTM zone 31N"
+        assert var.getncattr("grid_mapping_name") == "transverse_mercator"
+        assert var.getncattr("semi_major_axis") == 6378137.0
+    assert read_ugrid(path).crs.to_epsg() == 32631
 
 
 def test_geographic_crs_is_refused():
@@ -125,7 +138,7 @@ def test_geographic_crs_is_refused():
 
 
 def test_base_cell_that_is_not_a_binary_fraction_is_recovered_exactly(tmp_path):
-    mesh = generate(
+    mesh = generate_rd(
         box(187_013.0, 318_457.0, 187_400.0, 318_700.0),
         cell_size=10.1,
         refinement_areas=[(Point(187_200.0, 318_580.0).buffer(30), 2)],

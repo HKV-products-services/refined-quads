@@ -6,7 +6,8 @@ from shapely import LineString, Point, Polygon, box
 from golden.compare import assert_same_cells
 from golden.masters import MASTERS_DIR, load_master
 from golden.scenarios import SCENARIOS
-from refined_quads import InputError, check, generate
+from handmade import generate_rd
+from refined_quads import InputError, check
 
 DOMAIN = box(0, 0, 400, 300)
 AREA = Point(200, 150).buffer(40)
@@ -14,7 +15,7 @@ AREA = Point(200, 150).buffer(40)
 
 @pytest.mark.parametrize("scenario", SCENARIOS, ids=[s.name for s in SCENARIOS])
 def test_generate_gives_the_cells_of_the_golden_master(scenario):
-    mesh = generate(
+    mesh = generate_rd(
         scenario.domain,
         cell_size=scenario.cell_size,
         refinement_areas=scenario.refinement_areas,
@@ -31,7 +32,9 @@ def test_generate_gives_the_cells_of_the_golden_master(scenario):
 
 def test_level_five_with_24_m_gives_cells_of_0_75_m():
     # The old generator capped this at four levels (smallest cell >= 1 m).
-    mesh = generate(box(0, 0, 96, 96), cell_size=24.0, refinement_areas=[(box(40, 40, 50, 50), 5)])
+    mesh = generate_rd(
+        box(0, 0, 96, 96), cell_size=24.0, refinement_areas=[(box(40, 40, 50, 50), 5)]
+    )
 
     report = check(mesh)
     assert mesh.lattice.unit == 0.75
@@ -40,8 +43,8 @@ def test_level_five_with_24_m_gives_cells_of_0_75_m():
 
 
 def test_single_transition_row_value_applies_to_every_step():
-    one = generate(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)], transition_rows=2)
-    per_step = generate(
+    one = generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)], transition_rows=2)
+    per_step = generate_rd(
         DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)], transition_rows=[2, 2]
     )
 
@@ -49,7 +52,7 @@ def test_single_transition_row_value_applies_to_every_step():
 
 
 def test_without_refinement_areas_the_mesh_is_the_base_grid():
-    mesh = generate(box(10, 10, 110, 60), cell_size=25.0)
+    mesh = generate_rd(box(10, 10, 110, 60), cell_size=25.0)
 
     report = check(mesh)
     assert mesh.lattice.levels == 0
@@ -59,8 +62,8 @@ def test_without_refinement_areas_the_mesh_is_the_base_grid():
 
 
 def test_level_given_as_integral_float_is_accepted():
-    as_float = generate(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2.0)])
-    as_int = generate(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)])
+    as_float = generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2.0)])
+    as_int = generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)])
 
     assert_same_cells(as_float, as_int)
 
@@ -79,19 +82,19 @@ def test_level_given_as_integral_float_is_accepted():
 )
 def test_invalid_transition_rows_raise_input_error(rows, message):
     with pytest.raises(InputError, match=message):
-        generate(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)], transition_rows=rows)
+        generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)], transition_rows=rows)
 
 
 @pytest.mark.parametrize("level", [0, -1, 2.5, "2", None, True, math.nan])
 def test_invalid_level_raises_input_error(level):
     with pytest.raises(InputError, match="refinement area 0: the level must be an integer"):
-        generate(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, level)])
+        generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, level)])
 
 
 @pytest.mark.parametrize("area", [(Polygon(), 1), (LineString([(0, 0), (1, 1)]), 1), (AREA,), AREA])
 def test_invalid_refinement_area_raises_input_error(area):
     with pytest.raises(InputError, match="refinement area 0"):
-        generate(DOMAIN, cell_size=25.0, refinement_areas=[area])
+        generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[area])
 
 
 @pytest.mark.parametrize(
@@ -104,10 +107,10 @@ def test_invalid_refinement_area_raises_input_error(area):
 )
 def test_invalid_domain_raises_input_error(domain, message):
     with pytest.raises(InputError, match=message):
-        generate(domain, cell_size=25.0)
+        generate_rd(domain, cell_size=25.0)
 
 
 @pytest.mark.parametrize("cell_size", [0, -25.0, math.nan, math.inf, "25", True])
 def test_invalid_cell_size_raises_input_error(cell_size):
     with pytest.raises(InputError, match="cell size"):
-        generate(DOMAIN, cell_size=cell_size)
+        generate_rd(DOMAIN, cell_size=cell_size)

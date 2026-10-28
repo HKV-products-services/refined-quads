@@ -11,6 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 from pyproj import CRS
 
+from refined_quads._gis import crs_cf_attributes
 from refined_quads._recognise import derive_lattice
 from refined_quads.errors import InputError
 from refined_quads.mesh import Mesh
@@ -76,19 +77,14 @@ def write_ugrid(mesh: Mesh, path: str | os.PathLike[str]) -> None:
     path : str or path-like
         Output file; it is overwritten if it exists.
 
-    Raises
-    ------
-    NotImplementedError
-        If the mesh has a CRS other than EPSG:28992; deriving the UGRID attributes
-        for other CRSs is not available yet.
-
     Notes
     -----
     The structure is that of the D-HYDRO mesh generator export: the ``Mesh2d``
     topology with nodes, edges and faces, edge and face coordinates, face bounds, and
     node and face z set to -999 (no data) without a fill value, so readers do not
     mask them. A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the
-    D-Flow FM plugin; a mesh without CRS gets no CRS variable.
+    D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a
+    mesh without CRS gets no CRS variable.
     """
     crs_attributes = _crs_attributes(mesh.crs)
     vertices = mesh.nodes
@@ -279,9 +275,7 @@ def _crs_attributes(crs: CRS | None) -> dict[str, Any] | None:
         return None
     if crs.to_epsg() == 28992:
         return _RD_NEW_ATTRIBUTES
-    raise NotImplementedError(
-        f"UGRID CRS attributes are only available for EPSG:28992 so far, not for {crs.to_string()}"
-    )
+    return crs_cf_attributes(crs)
 
 
 def _mesh2d_topology(ds: netCDF4.Dataset, path: object) -> netCDF4.Variable[Any]:
