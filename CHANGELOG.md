@@ -24,6 +24,12 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 - Water areas in `generate` (`water_areas`, `water_removal`) with three water removal
   rules: `"centre"` (default), `"inside"` and `"touches"`.
 - `MeshReport.cell_levels`: the refinement level of the lattice square of every cell.
+- `write_ugrid(mesh, path)` and `read_ugrid(path)`: UGRID-1.0 netCDF with the structure
+  of the old writer; for EPSG:28992 exactly the CRS attributes of the D-Flow FM plugin.
+  `read_ugrid` reads only the 2D mesh of a net file (a 1D network is ignored) and
+  derives the lattice from the square cells.
+- `Mesh.crs`: the projected CRS of a mesh, or `None` when unknown; a geographic CRS
+  raises `InputError`.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 
@@ -42,3 +48,6 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 - Water areas that are given are always applied; there is no `clip_water` switch that
   silently ignored them. An unknown water removal rule raises `InputError` instead of
   falling back to the centre rule.
+- `write_ugrid` writes the CRS of the mesh instead of always EPSG:28992: a mesh without
+  CRS gets no CRS variable, and CRSs other than EPSG:28992 are not supported yet. The
+  `source` attribute names refined-quads and its version.

@@ -8,6 +8,9 @@ together with a runtime baseline per scenario in ``runtime_baseline.json``::
 
     uv run python tests/golden/record.py --qgis-dhydamo D:/Python_Projects/qgis_dhydamo
 
+``--ugrid-reference`` writes the UGRID file of the old writer for one scenario into
+``tests/golden/ugrid``, the reference for the structure and attributes of ``write_ugrid``.
+
 Existing masters are never overwritten unless ``--rerecord`` is given; an intended
 change of a master needs a changelog entry. Real-data scenarios (Geul, Parkstad) stay
 outside the repository: describe them in a TOML manifest and record them into the
@@ -33,6 +36,7 @@ import sys
 import tempfile
 import time
 import tomllib
+import types
 from datetime import date
 from pathlib import Path
 
@@ -53,6 +57,10 @@ from refined_quads import Lattice
 
 LEGACY_COMMIT = "9a324bcbf6c40199f5baea6397f095391d4cdc8b"
 LEGACY_ENGINE = "tools/runtime/mesh/meshgen/generate_quad_refinement.py"
+LEGACY_WRITER = "tools/runtime/mesh/meshgen/mesh_builder.py"
+LEGACY_CRS = "tools/runtime/mesh/net_crs.py"
+UGRID_DIR = Path(__file__).parent / "ugrid"
+UGRID_SCENARIO = "domain_with_hole"
 LEGACY_WATER_OPTIONS = {
     "centre": "FACES_WITH_INCLUDED_CIRCUMCENTERS",
     "inside": "INSIDE_NOT_INTERSECTED",
@@ -60,24 +68,59 @@ LEGACY_WATER_OPTIONS = {
 }
 
 
-def load_legacy_engine(repo: Path):
-    """Import ``generate_quad_refinement`` as it was at the legacy commit."""
+def _legacy_dir(repo: Path) -> Path:
+    """Extract the legacy generator files from the Git objects into a temporary directory."""
     commit = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "--verify", f"{LEGACY_COMMIT}^{{commit}}"],
         capture_output=True, text=True, check=False,
     )  # fmt: skip
     if commit.returncode != 0:
         sys.exit(f"error: commit {LEGACY_COMMIT[:7]} not found in {repo}")
-    source = subprocess.run(
-        ["git", "-C", str(repo), "show", f"{LEGACY_COMMIT}:{LEGACY_ENGINE}"],
-        capture_output=True, check=True,
-    ).stdout  # fmt: skip
-    path = Path(tempfile.mkdtemp(prefix="legacy_meshgen_")) / "generate_quad_refinement.py"
-    path.write_bytes(source)
-    spec = importlib.util.spec_from_file_location("legacy_generate_quad_refinement", path)
+    directory = Path(tempfile.mkdtemp(prefix="legacy_meshgen_"))
+    for name in (LEGACY_ENGINE, LEGACY_WRITER, LEGACY_CRS):
+        source = subprocess.run(
+            ["git", "-C", str(repo), "show", f"{LEGACY_COMMIT}:{name}"],
+            capture_output=True, check=True,
+        ).stdout  # fmt: skip
+        (directory / Path(name).name).write_bytes(source)
+    return directory
+
+
+def _import(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def load_legacy_engine(repo: Path):
+    """Import ``generate_quad_refinement`` as it was at the legacy commit."""
+    return _import(_legacy_dir(repo) / "generate_quad_refinement.py", "legacy_engine")
+
+
+def load_legacy_writer(repo: Path):
+    """Import ``mesh_builder`` (the UGRID writer) as it was at the legacy commit.
+
+    ``mesh_builder`` imports geopandas at module level for its layer reading, which the
+    writer does not use; a stub module stands in so that geopandas is not needed.
+    """
+    directory = _legacy_dir(repo)
+    sys.path.insert(0, str(directory))  # its fallback imports: generate_quad_refinement, net_crs
+    sys.modules.setdefault("geopandas", types.ModuleType("geopandas"))
+    return _import(directory / "mesh_builder.py", "legacy_mesh_builder")
+
+
+def record_ugrid_reference(repo: Path, rerecord: bool) -> None:
+    """Write the legacy UGRID file of one scenario, the reference for the writer's structure."""
+    target = UGRID_DIR / f"{UGRID_SCENARIO}_legacy.nc"
+    if target.exists() and not rerecord:
+        sys.exit(f"error: {target.name} exists; pass --rerecord to overwrite it")
+    writer = load_legacy_writer(repo)
+    scenario = next(s for s in SCENARIOS if s.name == UGRID_SCENARIO)
+    vertices, cells, _, _ = run_legacy(writer, scenario, repeat=1)
+    UGRID_DIR.mkdir(exist_ok=True)
+    writer.write_netcdf_ugrid(str(target), vertices, cells)
+    print(f"{target}: {len(cells)} cells")
 
 
 def legacy_params(cell_size, levels, transition_rows, water_removal):
@@ -274,13 +317,17 @@ def main(argv=None) -> int:
                         help="overwrite existing masters (needs a CHANGELOG entry)")  # fmt: skip
     parser.add_argument("--only", nargs="+", metavar="NAME", help="record only these scenarios")
     parser.add_argument("--repeat", type=int, default=3, help="runs per scenario for the timing")
+    parser.add_argument("--ugrid-reference", action="store_true",
+                        help=f"write the old UGRID file of {UGRID_SCENARIO}")  # fmt: skip
     parser.add_argument("--realdata", type=Path, metavar="MANIFEST",
                         help="record the real-data scenarios of this TOML manifest")  # fmt: skip
     parser.add_argument("--out", type=Path, default=os.environ.get(REALDATA_ENV),
                         help=f"real-data output directory (default: ${REALDATA_ENV})")  # fmt: skip
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING)
-    if args.realdata:
+    if args.ugrid_reference:
+        record_ugrid_reference(args.qgis_dhydamo, args.rerecord)
+    elif args.realdata:
         if args.out is None:
             parser.error(f"--realdata needs --out or ${REALDATA_ENV}")
         engine = load_legacy_engine(args.qgis_dhydamo)

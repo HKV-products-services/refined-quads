@@ -34,7 +34,8 @@ def generate(
     Parameters
     ----------
     domain : shapely.Polygon or shapely.MultiPolygon
-        The area the mesh covers; cells are clipped to it.
+        The area the mesh covers. A lattice square is kept whole when it overlaps
+        the domain, so cells along the boundary may reach slightly outside it.
     cell_size : float
         Side length of the base cell; any positive length.
     refinement_areas : iterable of (shapely geometry, int)

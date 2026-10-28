@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
+
+from refined_quads.errors import InputError
+from refined_quads.mesh import Lattice
 
 
 @dataclass(frozen=True)
@@ -114,6 +118,103 @@ def lattice_squares(
         x=np.concatenate(out_x).astype(np.int64),
         y=np.concatenate(out_y).astype(np.int64),
     )
+
+
+def derive_lattice(nodes: NDArray[np.float64], faces: NDArray[np.int64]) -> Lattice:
+    """Derive the lattice of a mesh from its cells.
+
+    Parameters
+    ----------
+    nodes : numpy.ndarray of float, shape (n, 2)
+        Node coordinates.
+    faces : numpy.ndarray of int, shape (m, k)
+        Node indices per face, padded with ``-1``.
+
+    Returns
+    -------
+    Lattice
+        The lattice: the smallest square cell gives the unit, the largest square
+        cell the base cell and its alignment, and the origin is the lattice point at
+        or below the lower-left node of the mesh.
+
+    Raises
+    ------
+    InputError
+        If the mesh has no axis-aligned square cells, the largest square is not the
+        smallest times a power of 2, the largest squares are not aligned to one
+        lattice, or a node is not a lattice point.
+
+    Notes
+    -----
+    Only square cells are used: a triangle can span two lattice squares (after an
+    edge flip of the orthogonality repair), so its extent and corner say nothing
+    about the lattice. When no base cell is a plain square (every one is split into
+    transition cells), the derived base cell is the largest square that is, and
+    cells of coarser lattice squares are not recognised by :func:`check`. The base
+    cell is rounded to ten significant digits, so that a cell size such as 10.1 m is
+    recovered exactly from coordinates with rounding errors.
+    """
+    valid = faces >= 0
+    used = np.unique(faces[valid])
+    if used.size == 0:
+        raise InputError("the mesh has no cells")
+    safe = np.where(valid, faces, 0)
+    xs = np.where(valid, nodes[safe, 0], np.nan)
+    ys = np.where(valid, nodes[safe, 1], np.nan)
+    x0, x1 = np.nanmin(xs, axis=1), np.nanmax(xs, axis=1)
+    y0, y1 = np.nanmin(ys, axis=1), np.nanmax(ys, axis=1)
+    width, height = x1 - x0, y1 - y0
+    extent = np.maximum(width, height)
+    tol = 1e-6 * extent
+    on_corner = (
+        np.isclose(xs, x0[:, None], rtol=0, atol=tol[:, None])
+        | np.isclose(xs, x1[:, None], rtol=0, atol=tol[:, None])
+    ) & (
+        np.isclose(ys, y0[:, None], rtol=0, atol=tol[:, None])
+        | np.isclose(ys, y1[:, None], rtol=0, atol=tol[:, None])
+    )
+    square = (
+        (valid.sum(axis=1) == 4)
+        & (np.abs(width - height) <= tol)
+        & (on_corner | ~valid).all(axis=1)
+    )
+    if not square.any() or not (extent > 0).all():
+        raise InputError("the mesh has no axis-aligned square cells, so it has no lattice")
+    sides = width[square]
+    unit_estimate = float(sides.min())
+    largest_side = float(sides.max())
+    ratio = largest_side / unit_estimate
+    levels = round(math.log2(ratio))
+    if abs(ratio - 2**levels) > 1e-6 * ratio:
+        raise InputError(
+            f"the largest square cell ({largest_side:g}) is not the smallest one "
+            f"({unit_estimate:g}) times a power of 2"
+        )
+    cell_size = float(f"{largest_side:.10g}")
+    lattice_unit = cell_size / 2**levels
+    # The largest squares are base cells: their corners lie on the base-cell lattice.
+    largest = np.flatnonzero(square & (width >= largest_side * (1 - 1e-6)))
+    corners = np.column_stack([x0[largest], y0[largest]])
+    offsets = (corners - corners[0]) / cell_size
+    if np.abs(offsets - np.rint(offsets)).max() > 1e-6:
+        raise InputError(
+            f"the largest square cells ({largest_side:g}) are not aligned to one lattice; "
+            f"this is not a refined quad mesh"
+        )
+    corner = corners[0]
+    low = nodes[used].min(axis=0)
+    steps = np.ceil((corner - low) / cell_size - 1e-6)
+    origin = corner - steps * cell_size
+    lattice = Lattice((float(origin[0]), float(origin[1])), cell_size, levels)
+    _, on_lattice = lattice.to_indices(nodes[used])
+    if not on_lattice.all():
+        bad = nodes[used[~on_lattice][0]]
+        raise InputError(
+            f"{int((~on_lattice).sum())} nodes are not on one lattice with unit "
+            f"{lattice_unit:g} (for example ({bad[0]:.3f}, {bad[1]:.3f})); this is not a "
+            f"refined quad mesh"
+        )
+    return lattice
 
 
 def twice_signed_areas(indices: NDArray[np.int64], faces: NDArray[np.int64]) -> NDArray[np.int64]:

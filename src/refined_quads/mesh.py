@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from pyproj import CRS
+from pyproj.exceptions import CRSError
 
 from refined_quads.errors import InputError
 
@@ -107,12 +109,16 @@ class Mesh:
         Node indices of each face, counterclockwise, padded at the end with ``-1``.
     lattice : Lattice
         The lattice the mesh lives on.
+    crs : pyproj.CRS or str or int, optional
+        Projected coordinate reference system of the coordinates, or ``None`` when it
+        is unknown; anything ``pyproj.CRS.from_user_input`` accepts.
 
     Raises
     ------
     InputError
         If the arrays have the wrong shape, coordinates are not finite, a face has
-        fewer than three nodes, refers to a missing node or has padding before a node.
+        fewer than three nodes, refers to a missing node or has padding before a node,
+        or the CRS is invalid or geographic (degrees).
 
     Notes
     -----
@@ -123,9 +129,12 @@ class Mesh:
     nodes: NDArray[np.float64]
     faces: NDArray[np.int64]
     lattice: Lattice = field(repr=False)
+    crs: CRS | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
-        """Validate the arrays and store them as read-only copies."""
+        """Validate the arrays and the CRS and store the arrays as read-only copies."""
+        if self.crs is not None:
+            object.__setattr__(self, "crs", projected_crs(self.crs))
         nodes = np.array(self.nodes, dtype=np.float64)
         if nodes.ndim != 2 or nodes.shape[1] != 2:
             raise InputError(f"nodes must have shape (n, 2), got {nodes.shape}")
@@ -154,7 +163,35 @@ class Mesh:
 
     def __repr__(self) -> str:
         """Summarise the mesh without printing the arrays."""
+        crs = "None" if self.crs is None else self.crs.to_string()
         return (
             f"Mesh(nodes={len(self.nodes)}, faces={len(self.faces)}, "
-            f"cell_size={self.lattice.cell_size:g}, levels={self.lattice.levels})"
+            f"cell_size={self.lattice.cell_size:g}, levels={self.lattice.levels}, crs={crs})"
         )
+
+
+def projected_crs(value: object) -> CRS:
+    """Interpret a CRS and require it to be projected.
+
+    Parameters
+    ----------
+    value : pyproj.CRS or str or int
+        Anything ``pyproj.CRS.from_user_input`` accepts.
+
+    Returns
+    -------
+    pyproj.CRS
+        The CRS.
+
+    Raises
+    ------
+    InputError
+        If the value is not a CRS, or the CRS is geographic (degrees).
+    """
+    try:
+        crs = CRS.from_user_input(value)
+    except CRSError as exc:
+        raise InputError(f"invalid CRS {value!r}: {exc}") from exc
+    if crs.is_geographic:
+        raise InputError(f"CRS {crs.to_string()} is geographic; cell sizes need a projected CRS")
+    return crs
