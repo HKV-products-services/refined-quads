@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.benchmarks/
+.coverage
+htmlcov/
+
+# Documentation build
+site/
+
+# Local issue tracker and scratch work (see docs/agents/issue-tracker.md)
+.scratch/

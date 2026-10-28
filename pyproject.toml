@@ -1,0 +1,105 @@
+[build-system]
+requires = ["hatchling>=1.27", "hatch-vcs>=0.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "refined-quads"
+dynamic = ["version"]
+description = "Generate and refine refined quad meshes (locally halved axis-aligned squares) for D-Flow FM."
+readme = "README.md"
+requires-python = ">=3.12"
+# Placeholder: the licence still has to be agreed with HKV and Svasek before publication.
+license = "LicenseRef-Proprietary"
+authors = [{ name = "HKV" }, { name = "Svasek Hydraulics" }]
+keywords = ["mesh", "quadtree", "ugrid", "d-flow-fm", "hydrodynamics"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Hydrology",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=1.26",
+    "shapely>=2.0",
+    "netCDF4>=1.6",
+    "pyogrio>=0.7",
+    "pyproj>=3.6",
+]
+
+[project.scripts]
+refined-quads = "refined_quads.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-timeout>=2.3",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.27",
+]
+
+[tool.uv]
+default-groups = ["dev", "docs"]
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/refined_quads"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [".scratch", ".github", "site"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "SIM", "C4", "PERF", "NPY", "PT", "RUF",
+    "D", "ANN",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "ANN"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["pyogrio", "pyogrio.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+# The fast suite skips slow, benchmark and realdata tests; pass `-m <marker>` to run them.
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--durations=15",
+    "-m", "not slow and not benchmark and not realdata",
+]
+timeout = 10
+xfail_strict = true
+markers = [
+    "slow: scenarios too slow for the fast suite (separate CI job)",
+    "benchmark: runtime benchmarks against the stored baseline (separate CI job)",
+    "realdata: tests on local project data; skipped unless the data path is set",
+]

@@ -1,0 +1,56 @@
+site_name: refined-quads
+site_description: Generate and refine refined quad meshes for D-Flow FM.
+repo_name: refined-quads
+strict: true
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+# Agent instructions live next to the docs but are not part of the site.
+exclude_docs: |
+  agents/
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_signature_annotations: true
+            separate_signature: true
+            show_source: false
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Explanation:
+      - Decisions:
+          - adr/index.md
+          - adr/0001-refine-from-existing-mesh.md
+          - adr/0002-output-contract-same-cells.md
+  - Reference:
+      - API: reference/api.md
