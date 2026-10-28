@@ -286,7 +286,12 @@ def _run(
     raw_cells = [list(c) for c in cells]  # the repair changes cells in place
     origin_xy = (grid.ox, grid.oy)
     try:
-        repair_orthogonality(cells, nodes, origin_xy, grid.unit, log=log)
+        fixed = (
+            None
+            if existing is None
+            else {tuple(sorted(c)) for cs in existing.cells_of.values() for c in cs}
+        )
+        repair_orthogonality(cells, nodes, origin_xy, grid.unit, log=log, fixed=fixed)
     except OrthogonalityRepairError as exc:
         raise RawRepairError(
             str(exc), exc.bad_points, _coordinates(nodes, grid, existing), raw_cells, origin_xy

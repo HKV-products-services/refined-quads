@@ -263,7 +263,10 @@ def derive_lattice(nodes: NDArray[np.float64], faces: NDArray[np.int64]) -> Latt
         & (on_corner | ~valid).all(axis=1)
     )
     if not square.any() or not (extent > 0).all():
-        raise InputError("the mesh has no axis-aligned square cells, so it has no lattice")
+        raise InputError(
+            "the mesh has no axis-aligned square cells, so it has no lattice; meshes of "
+            "rectangles or rotated cells are not supported"
+        )
     sides = width[square]
     unit_estimate = float(sides.min())
     largest_side = float(sides.max())

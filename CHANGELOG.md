@@ -72,6 +72,11 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   balance. Duplicate nodes are accepted, and so are lattice squares that their cells
   fill only partly (clipped along water); new cells in such a square stay only where
   they lie completely within its old cells.
+- Refine works on meshes from other programs: any lattice origin and base cell (derived
+  from the cells), and any transition cells (a pentagon, another triangulation) as long
+  as they fill a lattice square; squares that do not change keep their cells. Refine
+  judges the orthogonality only of edges next to new cells, so problems the mesh
+  already had do not stop it. Meshes of rectangles or rotated cells raise `InputError`.
 - `MeshReport.duplicate_nodes` (information only: cells that touch in a point lose
   nothing) and `MeshReport.split_edges` (an edge on top of another edge with other
   nodes: an internal wall; makes the mesh invalid).

@@ -225,7 +225,9 @@ class _Repair:
         unit: float,
         max_fm_ortho: float,
         log: Callable[[str], object] | None,
+        fixed: set[tuple[int, ...]] | None = None,
     ) -> None:
+        self.fixed = fixed or set()
         self.cells = cells
         self.nodes = nodes
         self.origin = origin
@@ -272,6 +274,13 @@ class _Repair:
         internal = edges.face_count == 2
         degenerate = internal & np.isinf(orth)
         bad = internal & (degenerate | (orth > self.max_fm_ortho))
+        if self.fixed:
+            # Edges between two cells of the existing mesh are not ours to judge.
+            keys = [tuple(sorted(c)) for c in self.cells]
+            for i in np.flatnonzero(bad):
+                f1, f2 = edges.faces[i]
+                if keys[f1] in self.fixed and keys[f2] in self.fixed:
+                    bad[i] = False
         finite = orth[internal & np.isfinite(orth)]
         stats = _Stats(int(internal.sum()), float(finite.max()) if finite.size else 0.0,
                        int(degenerate.sum()))  # fmt: skip
@@ -499,6 +508,7 @@ def repair_orthogonality(
     max_passes: int = 10,
     max_fm_ortho: float = MAX_FM_ORTHOGONALITY,
     log: Callable[[str], object] | None = None,
+    fixed: set[tuple[int, ...]] | None = None,
 ) -> list[list[int]]:
     """Make every internal edge FM-orthogonal, or raise.
 
@@ -518,6 +528,9 @@ def repair_orthogonality(
         Highest accepted FM orthogonality.
     log : callable, optional
         Receives a line per pass and repair.
+    fixed : set of tuple of int, optional
+        Cells of an existing mesh (sorted node numbers): an edge between two of them
+        is not judged, so refine does not fail on what it did not change.
 
     Returns
     -------
@@ -536,7 +549,7 @@ def repair_orthogonality(
     Per pass the invalid edges are flipped where that helps; when no flip helps, the
     lattice squares around them are redecomposed.
     """
-    state = _Repair(cells, nodes, origin, unit, max_fm_ortho, log)
+    state = _Repair(cells, nodes, origin, unit, max_fm_ortho, log, fixed)
     state.emit(
         f"[QuadRef] orthogonality check start: {len(cells)} cells, threshold orth_e <= "
         f"{max_fm_ortho:.2f} (FM edge orthogonality, circumcentre in triangle)."
