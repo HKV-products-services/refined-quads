@@ -1,6 +1,8 @@
 """Quadtree engine, taken over from the generator of qgis_dhydamo ``9a324bc``.
 
-The engine is a one-to-one port; issues 11 and 12 split it into one module per step.
+The engine is a port of the original generator. The steps up to the selection of
+lattice squares live in their own modules (areas, quadtree, balance, select); this
+module still holds face emission, conformity and the orthogonality repair (issue 12).
 The changes against the original are deliberate and listed in the changelog:
 
 - transition rows arrive per step from coarse to fine and are validated by the caller
@@ -31,37 +33,31 @@ from __future__ import annotations
 
 import logging
 import math
-import time
 from collections import defaultdict, deque
 from collections.abc import Callable, Sequence
-from typing import NamedTuple, cast
+from typing import NamedTuple
 
 import numpy as np
-import shapely
 from numpy.typing import NDArray
-from shapely import STRtree
 from shapely.geometry.base import BaseGeometry
-from shapely.prepared import PreparedGeometry, prep
+from shapely.prepared import prep
 
+from refined_quads._areas import prepare_refinement_areas
+from refined_quads._balance import balance_2_to_1, eliminate_t_junctions, finer_exists
+from refined_quads._grid import Key, make_grid, neighbours
 from refined_quads._orthogonality import MAX_FM_ORTHOGONALITY, _rgfgrid_centres
-from refined_quads.errors import Cancelled, InputError, OrthogonalityRepairError
+from refined_quads._progress import Callback as Progress
+from refined_quads._progress import Reporter
+from refined_quads._quadtree import build_quadtree
+from refined_quads._select import prepare_water, select_leaves
+from refined_quads.errors import InputError, OrthogonalityRepairError
 
 _log = logging.getLogger(__name__)
 
-Key = tuple[int, int, int, int]
-Leaf = tuple[int, int, int, int, int]
 BadEdge = tuple[int, int, int, int]
-Progress = Callable[[int | None, str], object]
 Float2 = NDArray[np.float64]
 
 WATER_REMOVAL_RULES = ("centre", "inside", "touches")
-
-
-def _fmt_elapsed(seconds: float) -> str:
-    s = int(seconds)
-    if s < 60:
-        return f"{s}s"
-    return f"{s // 60}m {s % 60:02d}s"
 
 
 # ---------------------------------------------------------------------------
@@ -674,460 +670,35 @@ def generate_cells(
         Start of the base grid, a lattice point: the lower-left corner of the domain
         rounded down to the lattice.
     """
-    max_levels = levels
-    # buffer_rows_by_level[lvl]: transition rows for the step from lvl to lvl + 1.
-    buffer_rows_by_level = list(transition_rows)
+    report = Reporter(progress)
 
-    # Integer grid unit: the smallest cell.
-    unit = cell_size / (2**max_levels)
-    base_i = 2**max_levels
+    domain_valid = domain if domain.is_valid else domain.buffer(0)
+    grid = make_grid(domain_valid.bounds, cell_size, levels, origin)
+    ox, oy, unit = grid.ox, grid.oy, grid.unit
+    water = prepare_water(water_areas, water_removal)
+    candidates = prepare_refinement_areas(refinement_areas, cell_size, transition_rows, report)
+    leaves = build_quadtree(prep(domain_valid), grid, candidates, report)
 
-    t_start = time.perf_counter()
+    report(40, "Quad Grid: 2:1 balancing...")
+    cell_dict: dict[Key, int] = {(ix0, iy0, ix1, iy1): lvl for ix0, iy0, ix1, iy1, lvl in leaves}
+    balance_2_to_1(cell_dict, levels, report)
+    report(43, "Quad Grid: T-junction elimination (three-side halving)...")
+    eliminate_t_junctions(cell_dict, levels, report)
+    leaves = [(ix0, iy0, ix1, iy1, lvl) for (ix0, iy0, ix1, iy1), lvl in cell_dict.items()]
 
-    def _check_cancel(pct: int | None = None, msg: str | None = None) -> None:
-        suffix = ""
-        if pct is not None or msg is not None:
-            suffix = f"  [{_fmt_elapsed(time.perf_counter() - t_start)}]"
-            _log.debug("[QuadRef] %s%s%s", f"{pct}% " if pct is not None else "", msg or "", suffix)
-        if progress is not None:
-            msg_out = (msg + suffix) if msg else (msg or "")
-            if progress(pct, msg_out):
-                raise Cancelled("mesh generation cancelled by the progress callback")
-
-    # -- domain -----------------------------------------------------------------
-    bnd_shp = domain if domain.is_valid else domain.buffer(0)
-    bnd_prep = prep(bnd_shp)
-    minx, miny, maxx, maxy = bnd_shp.bounds
-
-    if origin is None:
-        ox = math.floor(minx / cell_size) * cell_size
-        oy = math.floor(miny / cell_size) * cell_size
-    else:
-        ox = origin[0] + math.floor((minx - origin[0]) / cell_size) * cell_size
-        oy = origin[1] + math.floor((miny - origin[1]) / cell_size) * cell_size
-
-    def _to_real(ix: int, iy: int) -> tuple[float, float]:
-        return ox + ix * unit, oy + iy * unit
-
-    def _shp_cell(ix0: int, iy0: int, ix1: int, iy1: int) -> BaseGeometry:
-        rx0, ry0 = _to_real(ix0, iy0)
-        rx1, ry1 = _to_real(ix1, iy1)
-        return shapely.box(rx0, ry0, rx1, ry1)
-
-    # -- water (exclusion) ------------------------------------------------------
-    water_list = [wg if wg.is_valid else wg.buffer(0) for wg in water_areas]
-    water_tree = STRtree(water_list) if water_list else None
-
-    # -- refinement areas -------------------------------------------------------
-    # Simplify first: detail smaller than the cell size cannot be resolved by the
-    # quadtree, so such a tolerance is invisible in the result. Prevents a polygon
-    # with hundreds of thousands of vertices from stalling the zone buffering.
-    simplify_tol = cell_size / 8.0
-
-    def _simplify_refine_geom(geom: BaseGeometry) -> BaseGeometry:
-        n_before = int(shapely.get_num_coordinates(geom))
-        if n_before > 2000:
-            simplified = geom.simplify(simplify_tol, preserve_topology=True)
-            _log.debug(
-                "[QuadRef] refinement geometry simplified (tolerance=%.2fm): %d -> ~%d vertices",
-                simplify_tol,
-                n_before,
-                int(shapely.get_num_coordinates(simplified)),
-            )
-            return simplified
-        return geom
-
-    refine_polys = []
-    for geom, level in refinement_areas:
-        s = geom if geom.is_valid else geom.buffer(0)
-        refine_polys.append((_simplify_refine_geom(s), level))
-
-    # -- transition zones ---------------------------------------------------------
-    buffered_polys: list[tuple[BaseGeometry, int, list[tuple[BaseGeometry, int]]]] = []
-    n_refine_polys = len(refine_polys)
-    if n_refine_polys:
-        _check_cancel(1, f"Quad Grid: transition zones for {n_refine_polys} refinement areas...")
-
-    for poly_i, (poly, target_lvl) in enumerate(refine_polys):
-        if n_refine_polys > 20 and poly_i % max(1, n_refine_polys // 20) == 0:
-            _check_cancel(
-                1 + int(3 * poly_i / n_refine_polys),
-                f"Quad Grid: transition zones {poly_i}/{n_refine_polys}...",
-            )
-        zones: list[tuple[BaseGeometry, int]] = []
-        for lvl in range(target_lvl):
-            cum = 0.0
-            for inner_lvl in range(lvl, target_lvl):
-                n = buffer_rows_by_level[inner_lvl]
-                cum += n * (cell_size / (2 ** (inner_lvl + 1)))
-            zones.append((poly.buffer(cum), lvl))
-        buffered_polys.append((poly, target_lvl, zones))
-
-    # -- candidates: refinement areas with prepared geometries --------------------
-    # Intersecting the area gives its level; otherwise the finest transition zone it
-    # touches gives that zone's level + 1. The outermost zone feeds the STRtree.
-    cands: list[
-        tuple[int, PreparedGeometry[BaseGeometry], list[tuple[PreparedGeometry[BaseGeometry], int]]]
-    ] = []
-    cand_outer = []
-    for poly, target_lvl, zones in buffered_polys:
-        zp = [(prep(buf_poly), lvl) for buf_poly, lvl in zones]
-        cands.append((target_lvl, prep(poly), zp))
-        cand_outer.append(zones[0][0] if zones else poly)
-    cand_tree = STRtree(cand_outer) if cands else None
-
-    def _eval_cell(
-        cell_shp: BaseGeometry, base_lvl: int, cell_cands: tuple[int, ...]
-    ) -> tuple[int, int, list[int]]:
-        """Return the required level, the level fixed for all children and their candidates.
-
-        A candidate that the cell does not touch at all (outermost zone included)
-        cannot touch its smaller children either and is dropped.
-        """
-        req = base_lvl
-        child_base = base_lvl
-        keep = []
-        for ci in cell_cands:
-            level, p_main, zp = cands[ci]
-            if p_main.intersects(cell_shp):
-                req = max(req, level)
-                if p_main.contains_properly(cell_shp):
-                    child_base = max(child_base, level)
-                else:
-                    keep.append(ci)
-            else:
-                # Outside the area: the finest touching zone decides. Finer zones are
-                # subsets of coarser ones, so the first hit in reversed order is the
-                # finest, and untouched finer zones stay out of reach for children.
-                for p_buf, lvl_candidate in reversed(zp):
-                    if p_buf.intersects(cell_shp):
-                        contrib = lvl_candidate + 1
-                        req = max(req, contrib)
-                        if p_buf.contains_properly(cell_shp):
-                            child_base = max(child_base, contrib)
-                        else:
-                            keep.append(ci)
-                        break
-        return req, child_base, keep
-
-    # -- base grid ----------------------------------------------------------------
-    nx = math.ceil((maxx - ox) / cell_size)
-    ny = math.ceil((maxy - oy) / cell_size)
-    _check_cancel(5, f"Quad Grid: base grid ({nx}x{ny} = {nx * ny} cells)...")
-
-    queue: list[tuple[int, int, int, int, int, int, tuple[int, ...]]] = []
-    for gx in range(nx):
-        for gy in range(ny):
-            ix0 = gx * base_i
-            iy0 = gy * base_i
-            ix1 = ix0 + base_i
-            iy1 = iy0 + base_i
-            cell_shp = _shp_cell(ix0, iy0, ix1, iy1)
-            if bnd_prep.intersects(cell_shp):
-                if cand_tree is not None:
-                    cands0 = tuple(sorted(int(i) for i in cand_tree.query(cell_shp)))
-                else:
-                    cands0 = ()
-                queue.append((ix0, iy0, ix1, iy1, 0, 0, cands0))
-
-    _check_cancel(10, f"Quad Grid: quadtree refinement ({len(queue)} base cells)...")
-
-    # -- quadtree refinement --------------------------------------------------------
-    leaf_cells: list[Leaf] = []
-    processed = 0
-    report_every = max(1, min(10_000, len(queue) // 20))
-    # Progress by covered area: a base cell weighs 4**max_levels units, a cell at
-    # level L 4**(max_levels - L); an area is done when its cell becomes a leaf.
-    weight_total = len(queue) * (4**max_levels)
-    weight_done = 0
-    t_refine_start = time.perf_counter()
-
-    while queue:
-        ix0, iy0, ix1, iy1, cur_lvl, base_lvl, q_cands = queue.pop()
-        if q_cands:
-            req_lvl, child_base, child_cands_l = _eval_cell(
-                _shp_cell(ix0, iy0, ix1, iy1), base_lvl, q_cands
-            )
-            child_cands = tuple(child_cands_l)
-        else:
-            # No candidates left: the required level is fixed for the whole subtree.
-            req_lvl = base_lvl
-            child_base = base_lvl
-            child_cands = ()
-        if cur_lvl < req_lvl and cur_lvl < max_levels:
-            ixm = (ix0 + ix1) >> 1
-            iym = (iy0 + iy1) >> 1
-            queue.append((ix0, iy0, ixm, iym, cur_lvl + 1, child_base, child_cands))
-            queue.append((ixm, iy0, ix1, iym, cur_lvl + 1, child_base, child_cands))
-            queue.append((ix0, iym, ixm, iy1, cur_lvl + 1, child_base, child_cands))
-            queue.append((ixm, iym, ix1, iy1, cur_lvl + 1, child_base, child_cands))
-        else:
-            leaf_cells.append((ix0, iy0, ix1, iy1, cur_lvl))
-            weight_done += 4 ** (max_levels - cur_lvl)
-
-        processed += 1
-        if processed % report_every == 0:
-            fraction = weight_done / weight_total
-            pct = 10 + int(30 * fraction)
-            refine_elapsed = time.perf_counter() - t_refine_start
-            eta = ""
-            if fraction > 0.02:
-                remaining = max(0.0, refine_elapsed / fraction - refine_elapsed)
-                eta = f"  ~{_fmt_elapsed(remaining)} left"
-            _check_cancel(
-                pct,
-                f"Quad Grid: refining... {processed} processed, {len(queue)} queued, "
-                f"{len(leaf_cells)} leaf cells{eta}",
-            )
-
-    # -- 2:1 balancing ---------------------------------------------------------------
-    _check_cancel(40, "Quad Grid: 2:1 balancing...")
-
-    cell_dict: dict[Key, int] = {
-        (ix0, iy0, ix1, iy1): lvl for ix0, iy0, ix1, iy1, lvl in leaf_cells
-    }
-
-    def _find_ancestor(
-        ax0: int, ay0: int, ax1: int, ay1: int
-    ) -> tuple[Key, int, int, int, int, int] | None:
-        iw = ax1 - ax0
-        ih = ay1 - ay0
-        cx = (ax0 + ax1) >> 1
-        cy = (ay0 + ay1) >> 1
-        for _ in range(max_levels + 1):
-            iw <<= 1
-            ih <<= 1
-            px0 = (cx // iw) * iw
-            py0 = (cy // ih) * ih
-            pk = (px0, py0, px0 + iw, py0 + ih)
-            if pk in cell_dict:
-                return pk, px0, py0, px0 + iw, py0 + ih, cell_dict[pk]
-        return None
-
-    def _split(key: Key, new_lvl: int) -> list[Key]:
-        sx0, sy0, sx1, sy1 = key
-        sxm = (sx0 + sx1) >> 1
-        sym = (sy0 + sy1) >> 1
-        subs = [
-            (sx0, sy0, sxm, sym),
-            (sxm, sy0, sx1, sym),
-            (sx0, sym, sxm, sy1),
-            (sxm, sym, sx1, sy1),
-        ]
-        for sub in subs:
-            cell_dict[sub] = new_lvl
-        return subs
-
-    def _neighbours(key: Key) -> list[Key]:
-        """Same-size neighbour keys in the order N, S, E, W."""
-        ix0, iy0, ix1, iy1 = key
-        iw = ix1 - ix0
-        ih = iy1 - iy0
-        return [
-            (ix0, iy1, ix1, iy1 + ih),
-            (ix0, iy0 - ih, ix1, iy0),
-            (ix1, iy0, ix1 + iw, iy1),
-            (ix0 - iw, iy0, ix0, iy1),
-        ]
-
-    balance_queue = sorted(cell_dict.keys(), key=lambda k: -cell_dict[k])
-    bal_iter = 0
-    while balance_queue:
-        bal_iter += 1
-        if bal_iter % 2000 == 0:
-            _check_cancel(msg=f"Quad Grid: 2:1 balancing... {len(balance_queue)} left")
-
-        k = balance_queue.pop()
-        if k not in cell_dict:
-            continue
-        lvl = cell_dict[k]
-        for nk in _neighbours(k):
-            if nk in cell_dict:
-                n_lvl = cell_dict[nk]
-                if n_lvl < lvl - 1:
-                    del cell_dict[nk]
-                    balance_queue.extend(_split(nk, n_lvl + 1))
-            else:
-                result = _find_ancestor(*nk)
-                if result is not None:
-                    pk, *_, p_lvl = result
-                    if p_lvl < lvl - 1:
-                        del cell_dict[pk]
-                        balance_queue.extend(_split(pk, p_lvl + 1))
-
-    # -- T-junction detection -------------------------------------------------------
-    def _finer_exists(ix0: int, iy0: int, ix1: int, iy1: int, side: str) -> bool:
-        hw = (ix1 - ix0) >> 1
-        hh = (iy1 - iy0) >> 1
-        if side == "N":
-            return (ix0, iy1, ix0 + hw, iy1 + hh) in cell_dict or (
-                ix0 + hw,
-                iy1,
-                ix1,
-                iy1 + hh,
-            ) in cell_dict
-        if side == "S":
-            return (ix0, iy0 - hh, ix0 + hw, iy0) in cell_dict or (
-                ix0 + hw,
-                iy0 - hh,
-                ix1,
-                iy0,
-            ) in cell_dict
-        if side == "E":
-            return (ix1, iy0, ix1 + hw, iy0 + hh) in cell_dict or (
-                ix1,
-                iy0 + hh,
-                ix1 + hw,
-                iy1,
-            ) in cell_dict
-        return (ix0 - hw, iy0, ix0, iy0 + hh) in cell_dict or (
-            ix0 - hw,
-            iy0 + hh,
-            ix0,
-            iy1,
-        ) in cell_dict
-
-    # -- T-junction elimination: split cells with >= 3 finer neighbours ------------
-    _check_cancel(43, "Quad Grid: T-junction elimination (three-side halving)...")
-
-    def _free_side(s_n: bool, s_s: bool, s_e: bool) -> str:
-        if not s_n:
-            return "N"
-        if not s_s:
-            return "S"
-        if not s_e:
-            return "E"
-        return "W"
-
-    def _has_any_neighbor(key: Key, side: str) -> bool:
-        ncoords = _neighbours(key)["NSEW".index(side)]
-        if ncoords in cell_dict:
-            return True
-        return _find_ancestor(*ncoords) is not None
-
-    def _check_and_enqueue(k: Key, tj_queue: deque[Key], in_queue: set[Key]) -> None:
-        if k in cell_dict and k not in in_queue and cell_dict[k] < max_levels:
-            in_queue.add(k)
-            tj_queue.append(k)
-
-    tj_queue: deque[Key] = deque()
-    tj_in_queue: set[Key] = set()
-    for k, lvl in cell_dict.items():
-        if lvl < max_levels:
-            tj_queue.append(k)
-            tj_in_queue.add(k)
-
-    tj_total = 0
-    tj_processed = 0
-    while tj_queue:
-        k = tj_queue.popleft()
-        tj_in_queue.discard(k)
-        tj_processed += 1
-        if k not in cell_dict:
-            continue
-        ix0, iy0, ix1, iy1 = k
-        lvl = cell_dict[k]
-        if lvl >= max_levels:
-            continue
-
-        s_n = _finer_exists(ix0, iy0, ix1, iy1, "N")
-        s_s = _finer_exists(ix0, iy0, ix1, iy1, "S")
-        s_e = _finer_exists(ix0, iy0, ix1, iy1, "E")
-        s_w = _finer_exists(ix0, iy0, ix1, iy1, "W")
-        n_sp = s_n + s_s + s_e + s_w
-        if n_sp < 3:
-            continue
-        if n_sp == 3 and not _has_any_neighbor(k, _free_side(s_n, s_s, s_e)):
-            continue
-
-        del cell_dict[k]
-        _split(k, lvl + 1)
-        tj_total += 1
-
-        for ncoords in _neighbours(k):
-            _check_and_enqueue(ncoords, tj_queue, tj_in_queue)
-            if ncoords not in cell_dict:
-                res = _find_ancestor(*ncoords)
-                if res is not None:
-                    _check_and_enqueue(res[0], tj_queue, tj_in_queue)
-
-        if tj_total % 200 == 0:
-            _check_cancel(
-                msg=f"Quad Grid: T-junction elimination, {tj_total} split, "
-                f"{len(tj_queue)} queued..."
-            )
-
-    _log.debug(
-        "[QuadRef] T-junction elimination: %d split (%d checked), %d cells",
-        tj_total,
-        tj_processed,
-        len(cell_dict),
-    )
-
-    leaf_cells = [(ix0, iy0, ix1, iy1, lvl) for (ix0, iy0, ix1, iy1), lvl in cell_dict.items()]
-
-    # -- clip to the domain and remove water ------------------------------------------
-    _check_cancel(50, f"Quad Grid: {len(leaf_cells)} cells after balancing, clipping...")
-
-    def _water_exclusion_mask(
-        boxes: NDArray[np.object_], centres_x: Float2, centres_y: Float2
-    ) -> NDArray[np.bool_]:
-        """Mark the cells that the water removal rule removes (True = removed)."""
-        excluded = np.zeros(len(boxes), dtype=bool)
-        if water_tree is None or len(boxes) == 0:
-            return excluded
-        water_arr = np.asarray(water_list, dtype=object)
-        if water_removal == "centre":
-            centres = cast("NDArray[np.object_]", shapely.points(centres_x, centres_y))
-            q_idx, w_idx = water_tree.query(centres, predicate="intersects")
-            if len(q_idx):
-                contains = shapely.contains(water_arr[w_idx], centres[q_idx])
-                np.logical_or.at(excluded, q_idx[contains], True)
-            return excluded
-        # "intersects" as broad preselection (STRtree predicates were not reliably
-        # direction-independent across versions), then the exact test.
-        q_idx, w_idx = water_tree.query(boxes, predicate="intersects")
-        if len(q_idx):
-            if water_removal == "inside":
-                hit = shapely.contains(water_arr[w_idx], boxes[q_idx])
-            else:  # touches
-                hit = shapely.intersects(water_arr[w_idx], boxes[q_idx])
-            np.logical_or.at(excluded, q_idx[hit], True)
-        return excluded
-
-    valid_cells: list[Leaf] = []
-    if leaf_cells:
-        rx0 = np.array([ox + c[0] * unit for c in leaf_cells])
-        ry0 = np.array([oy + c[1] * unit for c in leaf_cells])
-        rx1 = np.array([ox + c[2] * unit for c in leaf_cells])
-        ry1 = np.array([oy + c[3] * unit for c in leaf_cells])
-        boxes = shapely.box(rx0, ry0, rx1, ry1)
-        contained = shapely.contains(bnd_shp, boxes)
-        intersects = ~contained & shapely.intersects(bnd_shp, boxes)
-        water_excl = _water_exclusion_mask(boxes, (rx0 + rx1) * 0.5, (ry0 + ry1) * 0.5)
-
-        for i, leaf in enumerate(leaf_cells):
-            if water_excl[i]:
-                continue
-            if intersects[i]:
-                clipped = boxes[i].intersection(bnd_shp)
-                if clipped.is_empty or clipped.area < 1e-6:
-                    continue
-            elif not contained[i]:
-                continue
-            valid_cells.append(leaf)
-
+    report(50, f"Quad Grid: {len(leaves)} cells after balancing, clipping...")
+    valid_cells = select_leaves(leaves, domain_valid, grid, water)
     if not valid_cells:
         raise InputError("no cells are left inside the domain; check the domain and water areas")
 
-    # Rebuild cell_dict from the remaining cells: _finer_exists (used again below)
-    # must not see neighbours that clipping or water removal just removed, or the
-    # edge of every water hole gets an inconsistent midpoint; with many small water
-    # areas this added up to thousands of pinch nodes (Parkstad).
+    # Rebuild cell_dict from the remaining cells: finer_exists (used below) must not
+    # see neighbours that clipping or water removal just removed, or the edge of every
+    # water hole gets an inconsistent midpoint; with many small water areas this added
+    # up to thousands of pinch nodes (Parkstad).
     cell_dict = {(ix0, iy0, ix1, iy1): lvl for ix0, iy0, ix1, iy1, lvl in valid_cells}
 
     # -- vertex registry (integer keys) ------------------------------------------------
-    _check_cancel(70, f"Quad Grid: {len(valid_cells)} valid cells, building nodes...")
+    report(70, f"Quad Grid: {len(valid_cells)} valid cells, building nodes...")
 
     pt_map: dict[tuple[int, int], int] = {}
     pt_list: list[tuple[int, int]] = []
@@ -1146,7 +717,7 @@ def generate_cells(
     eff: dict[Key, set[str]] = {}
     for ix0, iy0, ix1, iy1, _lvl in valid_cells:
         eff[(ix0, iy0, ix1, iy1)] = {
-            side for side in "NSEW" if _finer_exists(ix0, iy0, ix1, iy1, side)
+            side for side in "NSEW" if finer_exists(cell_dict, ix0, iy0, ix1, iy1, side)
         }
 
     valid_keys = set(eff.keys())
@@ -1160,7 +731,7 @@ def generate_cells(
         ck = work.popleft()
         if not _center_splits(eff[ck]):
             continue
-        for side, nk in zip("NSEW", _neighbours(ck), strict=True):
+        for side, nk in zip("NSEW", neighbours(ck), strict=True):
             if nk in valid_keys:
                 need = opposite[side]
                 if need not in eff[nk]:
@@ -1168,7 +739,7 @@ def generate_cells(
                     work.append(nk)
 
     # -- emit cells ----------------------------------------------------------------------
-    _check_cancel(80, f"Quad Grid: converting {len(valid_cells)} cells to mesh elements...")
+    report(80, f"Quad Grid: converting {len(valid_cells)} cells to mesh elements...")
 
     out_cells: list[list[int]] = []
     n_valid = len(valid_cells)
@@ -1176,7 +747,7 @@ def generate_cells(
 
     for i, (ix0, iy0, ix1, iy1, _lvl) in enumerate(valid_cells):
         if i % report_every3 == 0:
-            _check_cancel(80 + int(18 * i / n_valid))
+            report(80 + int(18 * i / n_valid))
         ixm = (ix0 + ix1) >> 1
         iym = (iy0 + iy1) >> 1
         bl = _vi(ix0, iy0)
@@ -1233,7 +804,7 @@ def generate_cells(
             ]
 
     # -- head-to-toe fix -----------------------------------------------------------------
-    _check_cancel(99, "Quad Grid: head-to-toe correction...")
+    report(99, "Quad Grid: head-to-toe correction...")
 
     def _parent_sq(ax_: int, ay_: int, bx_: int, by_: int, gx_: int, gy_: int) -> Key:
         side_len = abs(bx_ - ax_) + abs(by_ - ay_)
@@ -1416,7 +987,7 @@ def generate_cells(
     h2t_n = 0
     while _h2t_pass():
         h2t_n += 1
-        _check_cancel(msg=f"Quad Grid: head-to-toe fix, iteration {h2t_n}...")
+        report(msg=f"Quad Grid: head-to-toe fix, iteration {h2t_n}...")
     _log.debug("[H2T] done after %d iterations, %d cells", h2t_n, len(out_cells))
 
     # -- conformity repair: resolve every remaining hanging node ----------------------
@@ -1509,7 +1080,7 @@ def generate_cells(
 
     # -- orthogonality check and repair ------------------------------------------------
     # Last step, after balancing, centre splits and head-to-toe; may add centre nodes.
-    _check_cancel(msg="Quad Grid: orthogonality check...")
+    report(msg="Quad Grid: orthogonality check...")
     log = None if progress is None else (lambda m: progress(None, m))
     raw_cells = [list(c) for c in out_cells]  # the repair changes out_cells in place
     try:
@@ -1517,5 +1088,5 @@ def generate_cells(
     except OrthogonalityRepairError as exc:
         raise RawRepairError(str(exc), exc.bad_points, vertices, raw_cells, (ox, oy)) from None
 
-    _check_cancel(100, f"Quad Grid: done - {len(vertices)} nodes, {len(out_cells)} elements.")
+    report(100, f"Quad Grid: done - {len(vertices)} nodes, {len(out_cells)} elements.")
     return vertices, out_cells, (ox, oy)
