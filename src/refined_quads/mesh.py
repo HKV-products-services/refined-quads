@@ -195,3 +195,40 @@ def projected_crs(value: object) -> CRS:
     if crs.is_geographic:
         raise InputError(f"CRS {crs.to_string()} is geographic; cell sizes need a projected CRS")
     return crs
+
+
+@dataclass(frozen=True, eq=False)
+class ReplacementMap:
+    """What a refine did to the cells of the existing mesh.
+
+    Attributes
+    ----------
+    source : numpy.ndarray of int, shape (m_new,)
+        For every cell of the new mesh, the cell of the existing mesh it lies in
+        (for an unchanged cell: that same cell). Use it to carry cell data over.
+    unchanged : numpy.ndarray of bool, shape (m_new,)
+        True where the new cell is an existing cell, with the same nodes.
+    removed : numpy.ndarray of int
+        Cells of the existing mesh that are not in the new mesh: replaced by finer
+        or re-patterned cells, or removed by the domain or the water areas.
+    """
+
+    source: NDArray[np.int64]
+    unchanged: NDArray[np.bool_]
+    removed: NDArray[np.int64]
+
+
+@dataclass(frozen=True, eq=False)
+class RefineResult:
+    """The result of :func:`refine`.
+
+    Attributes
+    ----------
+    mesh : Mesh
+        The refined mesh.
+    replacement_map : ReplacementMap
+        How its cells relate to the cells of the existing mesh.
+    """
+
+    mesh: Mesh
+    replacement_map: ReplacementMap

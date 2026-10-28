@@ -193,28 +193,89 @@ def domain_holes(domain):
     return [h for h in shapely.get_parts(shapely.difference(shells, domain)) if h.area > 0]
 
 
-def run_legacy(engine, scenario: Scenario, repeat: int):
-    """Run the legacy generator; return its output and the best runtime of ``repeat`` runs.
+def domain_shells(domain):
+    """The domain with its holes filled."""
+    import shapely
 
-    Holes in the domain are given to the legacy generator as extra water areas: this
-    package treats them as water areas (an intended change; the legacy generator kept
-    every lattice square that overlaps the domain, also inside a hole), and with them
-    as water areas the legacy generator gives the same cells.
+    parts = shapely.get_parts(domain)
+    return shapely.union_all(shapely.polygons(shapely.get_exterior_ring(parts)))
+
+
+def clip_with_meshkernel(vertices, cells, polygons, rule):
+    """Clip like the model workflow (hydrolib's mesh2d_clip): MeshKernel per merged part.
+
+    Independent of the package: merge the polygons, call ``mesh2d_delete`` per part
+    (holes as inner rings), then ``mesh2d_delete_hanging_edges``.
+    """
+    import meshkernel as mk
+    import shapely
+
+    option = {
+        "centre": mk.DeleteMeshOption.FACES_WITH_INCLUDED_CIRCUMCENTERS,
+        "inside": mk.DeleteMeshOption.INSIDE_NOT_INTERSECTED,
+        "touches": mk.DeleteMeshOption.INSIDE_AND_INTERSECTED,
+    }[rule]
+    edges = sorted(
+        {(min(c[k], c[(k + 1) % len(c)]), max(c[k], c[(k + 1) % len(c)])) for c in cells
+         for k in range(len(c))}
+    )  # fmt: skip
+    kernel = mk.MeshKernel(projection=mk.ProjectionType.CARTESIAN)
+    kernel.mesh2d_set(
+        mk.Mesh2d(
+            node_x=np.ascontiguousarray(vertices[:, 0]),
+            node_y=np.ascontiguousarray(vertices[:, 1]),
+            edge_nodes=np.asarray(edges, dtype=np.int32).ravel(),
+            face_nodes=np.asarray([v for c in cells for v in c], dtype=np.int32),
+            nodes_per_face=np.asarray([len(c) for c in cells], dtype=np.int32),
+        )
+    )
+    merged = shapely.union_all(np.asarray(polygons, dtype=object))
+    for part in shapely.get_parts(merged):
+        rings = [np.asarray(part.exterior.coords)] + [np.asarray(r.coords) for r in part.interiors]
+        xy = rings[0]
+        for ring in rings[1:]:
+            xy = np.vstack([xy, [[-998.0, -998.0]], ring])
+        geometry = mk.GeometryList(np.ascontiguousarray(xy[:, 0]), np.ascontiguousarray(xy[:, 1]))
+        kernel.mesh2d_delete(geometry, option, False)
+    kernel.mesh2d_delete_hanging_edges()
+    out = kernel.mesh2d_get()
+    xy = np.column_stack([out.node_x, out.node_y])
+    clipped, start = [], 0
+    for n in out.nodes_per_face:
+        clipped.append([int(v) for v in out.face_nodes[start : start + n]])
+        start += n
+    return xy, clipped, f"meshkernel {mk.__version__} {option.name}, merged parts"
+
+
+def run_legacy(engine, scenario: Scenario, repeat: int):
+    """Run the legacy generator and the clip; return the output and the best runtime.
+
+    Water areas and holes of the domain are clipped cell by cell afterwards with
+    MeshKernel, as the model-building workflow does (2026-10-28 decision): the legacy
+    generator runs without water on the domain with its holes filled. The runtime
+    covers the generator and the clip.
     """
     params = legacy_params(
         scenario.cell_size, scenario.levels, scenario.transition_rows, scenario.water_removal
     )
+    polygons = [*scenario.water_areas, *domain_holes(scenario.domain)]
     times = []
     for _ in range(repeat):
         t0 = time.perf_counter()
         vertices, cells = engine.generate_quad_refinement_mesh(
-            scenario.domain,
-            [*scenario.water_areas, *domain_holes(scenario.domain)],
+            domain_shells(scenario.domain),
+            [],
             [(g, level) for g, level in scenario.refinement_areas],
             dict(params),
         )
+        vertices = np.asarray(vertices, dtype=np.float64)
+        if polygons:
+            vertices, cells, clip = clip_with_meshkernel(
+                vertices, cells, polygons, scenario.water_removal
+            )
+            params = {**params, "clip": clip}
         times.append(time.perf_counter() - t0)
-    return np.asarray(vertices, dtype=np.float64), cells, params, times
+    return vertices, cells, params, times
 
 
 def to_master(name, scenario: Scenario, vertices, cells, params, meta) -> Master:

@@ -11,22 +11,45 @@ from refined_quads._areas import Candidates, required_level
 from refined_quads._grid import Grid, Leaf
 from refined_quads._progress import Reporter, fmt_elapsed
 
-# A queued cell: key, its level, the level fixed by an ancestor and its candidates.
-_Queued = tuple[int, int, int, int, int, int, tuple[int, ...]]
+#: A queued cell: key, its level, the level fixed by an ancestor and its candidates.
+Queued = tuple[int, int, int, int, int, int, tuple[int, ...]]
+
+
+def base_cells(
+    domain: PreparedGeometry[BaseGeometry], grid: Grid, candidates: Candidates, report: Reporter
+) -> list[Queued]:
+    """Return the base cells that touch the domain, ready for :func:`build_quadtree`."""
+    base = grid.base
+    report(5, f"Quad Grid: base grid ({grid.nx}x{grid.ny} = {grid.nx * grid.ny} cells)...")
+    queue: list[Queued] = []
+    for gx in range(grid.nx):
+        for gy in range(grid.ny):
+            ix0 = gx * base
+            iy0 = gy * base
+            cell = grid.box(ix0, iy0, ix0 + base, iy0 + base)
+            if domain.intersects(cell):
+                queue.append((ix0, iy0, ix0 + base, iy0 + base, 0, 0, candidates.query(cell)))
+    return queue
+
+
+def existing_cells(leaves: list[Leaf], grid: Grid, candidates: Candidates) -> list[Queued]:
+    """Return the lattice squares of an existing mesh, ready for :func:`build_quadtree`."""
+    return [
+        (ix0, iy0, ix1, iy1, level, 0, candidates.query(grid.box(ix0, iy0, ix1, iy1)))
+        for ix0, iy0, ix1, iy1, level in leaves
+    ]
 
 
 def build_quadtree(
-    domain: PreparedGeometry[BaseGeometry],
-    grid: Grid,
-    candidates: Candidates,
-    report: Reporter,
+    queue: list[Queued], grid: Grid, candidates: Candidates, report: Reporter
 ) -> list[Leaf]:
-    """Return the leaves of the quadtree over the base cells that touch the domain.
+    """Split the queued cells until every cell has its required level; return the leaves.
 
     Parameters
     ----------
-    domain : prepared shapely geometry
-        The domain.
+    queue : list
+        Start cells: the base cells that touch the domain (generate) or the lattice
+        squares of an existing mesh (refine); consumed.
     grid : Grid
         The base grid.
     candidates : Candidates
@@ -43,21 +66,10 @@ def build_quadtree(
     -----
     Candidates are pruned along the tree: children inherit only the candidates that
     their parent touches, and a cell completely inside an area or zone fixes that
-    level for its whole subtree, which then needs no geometry tests.
+    level for its whole subtree, which then needs no geometry tests. A start cell is
+    never coarsened.
     """
-    base = grid.base
-    report(5, f"Quad Grid: base grid ({grid.nx}x{grid.ny} = {grid.nx * grid.ny} cells)...")
-
-    queue: list[_Queued] = []
-    for gx in range(grid.nx):
-        for gy in range(grid.ny):
-            ix0 = gx * base
-            iy0 = gy * base
-            cell = grid.box(ix0, iy0, ix0 + base, iy0 + base)
-            if domain.intersects(cell):
-                queue.append((ix0, iy0, ix0 + base, iy0 + base, 0, 0, candidates.query(cell)))
-
-    report(10, f"Quad Grid: quadtree refinement ({len(queue)} base cells)...")
+    report(10, f"Quad Grid: quadtree refinement ({len(queue)} start cells)...")
 
     max_levels = grid.levels
     leaves: list[Leaf] = []
@@ -65,7 +77,7 @@ def build_quadtree(
     report_every = max(1, min(10_000, len(queue) // 20))
     # Progress by covered area: a base cell weighs 4**max_levels units, a cell at
     # level L 4**(max_levels - L); an area is done when its cell becomes a leaf.
-    weight_total = len(queue) * (4**max_levels)
+    weight_total = sum(4 ** (max_levels - q[4]) for q in queue) or 1
     weight_done = 0
     started = time.perf_counter()
 

@@ -35,6 +35,13 @@ class MeshReport:
         cells.
     off_lattice_nodes : numpy.ndarray of float, shape (k, 2)
         Nodes that are not lattice points.
+    duplicate_nodes : numpy.ndarray of float, shape (k, 2)
+        Nodes at the same lattice point as another node (one row per extra node).
+        Information only: cells that touch only in such a point lose nothing, as flow
+        goes through edges (see ``split_edges``).
+    split_edges : numpy.ndarray of float, shape (k, 2)
+        Midpoints of edges that lie on top of another edge with different nodes: an
+        internal wall that flow cannot cross.
     hanging_nodes : numpy.ndarray of float, shape (k, 2)
         Nodes that lie inside an edge of a cell instead of at its ends.
     balance_violations : numpy.ndarray of float, shape (k, 2)
@@ -62,6 +69,8 @@ class MeshReport:
     cells_per_level: dict[int, int]
     cell_levels: NDArray[np.int64]
     off_lattice_nodes: NDArray[np.float64]
+    duplicate_nodes: NDArray[np.float64]
+    split_edges: NDArray[np.float64]
     hanging_nodes: NDArray[np.float64]
     balance_violations: NDArray[np.float64]
     orthogonality: NDArray[np.float64]
@@ -80,6 +89,7 @@ class MeshReport:
         """True when every check passes."""
         return not (
             len(self.off_lattice_nodes)
+            or len(self.split_edges)
             or len(self.hanging_nodes)
             or len(self.balance_violations)
             or len(self.non_orthogonal_edges)
@@ -106,6 +116,8 @@ class MeshReport:
             f"nodes: {self.n_nodes}, cells: {self.n_cells}",
             f"cells per level: {levels or '-'}",
             f"nodes off the lattice: {len(self.off_lattice_nodes)}",
+            f"duplicate nodes (information): {len(self.duplicate_nodes)}",
+            f"split edges: {len(self.split_edges)}",
             f"hanging nodes: {len(self.hanging_nodes)}",
             f"2:1 balance violations: {len(self.balance_violations)}",
             f"non-orthogonal edges (> {self.max_allowed_orthogonality:.2f}): "
@@ -142,7 +154,17 @@ def check(mesh: Mesh) -> MeshReport:
     indices, on_lattice = lattice.to_indices(mesh.nodes)
     off_lattice = used[~on_lattice[used]]
 
+    _, first, counts = np.unique(indices[used], axis=0, return_index=True, return_counts=True)
+    duplicates = np.setdiff1d(np.arange(len(used)), first).astype(np.int64)
     edges = unique_edges(faces)
+    # An edge as the pair of its lattice points (each point encoded as one integer).
+    low = indices[used].min(axis=0)
+    span = indices[used].max(axis=0) - low + 1
+    point_key = (indices[:, 0] - low[0]) * span[1] + (indices[:, 1] - low[1])
+    edge_keys = np.sort(point_key[edges.nodes], axis=1)
+    _, edge_first = np.unique(edge_keys, axis=0, return_index=True)
+    split = np.setdiff1d(np.arange(len(edges.nodes)), edge_first).astype(np.int64)
+    split_midpoints = (mesh.nodes[edges.nodes[split, 0]] + mesh.nodes[edges.nodes[split, 1]]) / 2
     hanging = hanging_nodes(indices, edges.nodes)
 
     squares = lattice_squares(indices, faces, lattice.levels)
@@ -162,6 +184,8 @@ def check(mesh: Mesh) -> MeshReport:
         cells_per_level={int(lv): int(n) for lv, n in zip(levels, counts, strict=True)},
         cell_levels=squares.face_level,
         off_lattice_nodes=mesh.nodes[off_lattice],
+        duplicate_nodes=mesh.nodes[used[duplicates]],
+        split_edges=split_midpoints,
         hanging_nodes=mesh.nodes[hanging],
         balance_violations=np.asarray(lattice.origin) + violations * (lattice.unit / 2.0),
         orthogonality=orth[internal],

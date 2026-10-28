@@ -33,22 +33,22 @@
       "seconds": 0.1331
     },
     "domain_with_hole": {
-      "cells": 829,
-      "median_seconds": 0.0603,
-      "runs": 3,
-      "seconds": 0.0564
+      "cells": 840,
+      "median_seconds": 0.1329,
+      "runs": 1,
+      "seconds": 0.1329
     },
     "head_to_toe_boxes": {
-      "cells": 840,
-      "median_seconds": 0.0624,
-      "runs": 3,
-      "seconds": 0.0533
+      "cells": 842,
+      "median_seconds": 0.0851,
+      "runs": 1,
+      "seconds": 0.0851
     },
     "head_to_toe_circles": {
-      "cells": 1875,
-      "median_seconds": 0.1515,
-      "runs": 3,
-      "seconds": 0.1286
+      "cells": 1877,
+      "median_seconds": 0.1847,
+      "runs": 1,
+      "seconds": 0.1847
     },
     "l_shaped_domain": {
       "cells": 1006,
@@ -57,10 +57,10 @@
       "seconds": 0.0664
     },
     "many_small_water_areas": {
-      "cells": 2326,
-      "median_seconds": 0.0981,
-      "runs": 3,
-      "seconds": 0.0967
+      "cells": 2350,
+      "median_seconds": 0.33,
+      "runs": 1,
+      "seconds": 0.33
     },
     "refinement_at_domain_edge": {
       "cells": 2112,
@@ -75,22 +75,22 @@
       "seconds": 0.3075
     },
     "water_removal_centre": {
-      "cells": 1466,
-      "median_seconds": 0.064,
-      "runs": 3,
-      "seconds": 0.0634
+      "cells": 1463,
+      "median_seconds": 0.1473,
+      "runs": 1,
+      "seconds": 0.1473
     },
     "water_removal_inside": {
-      "cells": 1541,
-      "median_seconds": 0.0699,
-      "runs": 3,
-      "seconds": 0.0681
+      "cells": 1536,
+      "median_seconds": 0.1533,
+      "runs": 1,
+      "seconds": 0.1533
     },
     "water_removal_touches": {
-      "cells": 1366,
-      "median_seconds": 0.0625,
-      "runs": 3,
-      "seconds": 0.0624
+      "cells": 1371,
+      "median_seconds": 0.1452,
+      "runs": 1,
+      "seconds": 0.1452
     }
   }
 }

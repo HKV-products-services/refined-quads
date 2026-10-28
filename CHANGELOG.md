@@ -15,14 +15,19 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   edge (the D-Flow FM measure), orientation, cells per refinement level and nodes off the
   lattice.
 - `InputError` for invalid input.
-- Golden masters of the generator at qgis_dhydamo `9a324bc` for twelve synthetic
-  scenarios, with the recording script and a runtime baseline (`tests/golden`).
+- Golden masters of the generator at qgis_dhydamo `9a324bc` for fourteen synthetic
+  scenarios, with the recording script and a runtime baseline (`tests/golden`); with
+  water or holes they are the old generator without water plus the MeshKernel clip of
+  the model workflow.
 - `generate(domain, *, cell_size, refinement_areas, transition_rows) -> Mesh`, with the
   engine of the generator at qgis_dhydamo `9a324bc`; it gives the same cells for the
   same input (golden masters).
 - `OrthogonalityRepairError` when the orthogonality repair does not close.
 - Water areas in `generate` (`water_areas`, `water_removal`) with three water removal
-  rules: `"centre"` (default), `"inside"` and `"touches"`.
+  rules: `"centre"` (default), `"inside"` and `"touches"`. The finished mesh is clipped
+  cell by cell with MeshKernel, exactly as the model workflow (hydrolib's
+  `mesh2d_clip`) does, so the remaining small cells follow the water's edge; MeshKernel
+  is a new dependency.
 - `MeshReport.cell_levels`: the refinement level of the lattice square of every cell.
 - `write_ugrid(mesh, path)` and `read_ugrid(path)`: UGRID-1.0 netCDF with the structure
   of the old writer; for EPSG:28992 exactly the CRS attributes of the D-Flow FM plugin.
@@ -55,6 +60,21 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   `<output>_raw.nc` and `<output>_problems.gpkg` (layer `orthogonality_problems`,
   field `orth_e`, -1 for a degenerate edge) in the CRS of the mesh and exits with 1; a
   failure to write them is reported without hiding the repair error.
+- `refine(mesh, refinement_areas, ...) -> RefineResult`: refine an existing mesh
+  without its original input (ADR-0001). The lattice squares are recognised from the
+  cells, the new areas applied, the 2:1 balance restored where needed; squares that do
+  not change keep their cells and nodes exactly, the mesh never grows beyond its
+  footprint, and a domain or water areas only remove new cells. `RefineResult` has the
+  new mesh and a `ReplacementMap` (per new cell the old cell it lies in, which cells are
+  unchanged, which old cells went). `generate` is the same route from the base grid.
+- `MeshRecognitionError` (an `InputError` with locations) when a mesh cannot be
+  refined: nodes off its lattice, cells that fill no lattice square, or a broken 2:1
+  balance. Duplicate nodes are accepted, and so are lattice squares that their cells
+  fill only partly (clipped along water); new cells in such a square stay only where
+  they lie completely within its old cells.
+- `MeshReport.duplicate_nodes` (information only: cells that touch in a point lose
+  nothing) and `MeshReport.split_edges` (an edge on top of another edge with other
+  nodes: an internal wall; makes the mesh invalid).
 - Benchmarks (`pytest -m benchmark`, pytest-benchmark) on three golden-master
   scenarios, and `tests/golden/benchmarks.py` to compare results with a baseline and
   report changes above 5%. CI runs slow tests and benchmarks on main and compares with
@@ -62,11 +82,12 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 
-- Intended output change: holes in the domain are treated as water areas, with the
-  water removal rule. The old generator kept every lattice square that overlaps the
-  domain, so cells reached into a hole (in the golden-master scenario 84 cells, 15% of
-  the hole); with the default rule `"centre"` no square with its centre in a hole is
-  kept. The golden master `domain_with_hole` is recorded with the hole as a water area.
+- Intended output change: water areas are clipped cell by cell with MeshKernel after
+  generation, instead of removing whole lattice squares before the cells are formed
+  (the old `clip_water` option). Holes in the domain are clipped the same way; the old
+  generator kept every lattice square that overlaps the domain, so cells reached into
+  a hole. MeshKernel derives cells from edges again: a single deleted cell whose edges
+  all stay comes back, which is accepted.
 - Intended output change: no minimum cell size. A 24 m base cell asked for level 5 now
   gives 0.75 m cells; the old generator capped the levels so that the smallest cell
   was at least 1 m (4 levels, 1.5 m).

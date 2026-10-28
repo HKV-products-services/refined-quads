@@ -78,8 +78,8 @@ def test_node_off_the_lattice_is_found():
 
 
 def test_cell_that_fills_no_lattice_square_is_unrecognised():
-    # A 4 x 2 rectangle is neither a lattice square nor part of a transition pattern.
-    mesh = mesh_from_cells([[(0, 0), (4, 0), (4, 2), (0, 2)]])
+    # A triangle with a corner at a third of a side is no part of any pattern.
+    mesh = mesh_from_cells([[(0, 0), (3, 0), (0, 3)]], levels=2)
 
     report = check(mesh)
 
@@ -129,3 +129,45 @@ def test_orthogonality_does_not_depend_on_scale(unit):
     mesh = mesh_from_cells(CLEAN, cell_size=4 * unit, unit_coordinates=unit)
 
     assert check(mesh).is_valid
+
+
+def test_duplicate_node_is_found():
+    # Two triangles of the base cell share a corner, but one gets its own copy of it.
+    mesh = mesh_from_cells(CLEAN)
+    shared = mesh.faces[2, 0]
+    nodes = np.vstack([mesh.nodes, mesh.nodes[[shared]]])
+    faces = mesh.faces.copy()
+    faces[2, 0] = len(mesh.nodes)
+
+    report = check(Mesh(nodes, faces, mesh.lattice))
+
+    np.testing.assert_array_equal(report.duplicate_nodes, [mesh.nodes[shared]])
+    assert "duplicate nodes (information): 1" in report.summary()
+
+
+def test_edge_on_top_of_another_edge_with_other_nodes_is_a_split_edge():
+    # Copy a corner used by only one cell: the cells around it touch in a point only.
+    mesh = mesh_from_cells(CLEAN)
+    corner = mesh.faces[3, 1]  # (6, 0), used by the two lower fine squares
+    users = np.flatnonzero((mesh.faces == corner).any(axis=1))
+    nodes = np.vstack([mesh.nodes, mesh.nodes[[corner]]])
+    faces = mesh.faces.copy()
+    faces[users[0]][faces[users[0]] == corner] = len(mesh.nodes)
+
+    report = check(Mesh(nodes, faces, mesh.lattice))
+
+    assert len(report.duplicate_nodes) == 1
+    # The two fine squares shared the edge (6,0)-(6,2); now it is two edges on top of
+    # each other with different nodes: a wall.
+    np.testing.assert_array_equal(report.split_edges, [[1006.0, 2001.0]])
+    assert not report.is_valid
+
+
+def test_partly_filled_lattice_square_is_recognised():
+    # Clipping along water removes single cells: the rest of the square is valid.
+    mesh = mesh_from_cells([CLEAN[1], CLEAN[2], *FINE_RIGHT])
+
+    report = check(mesh)
+
+    assert report.cells_per_level == {0: 2, 1: 4}
+    assert report.is_valid

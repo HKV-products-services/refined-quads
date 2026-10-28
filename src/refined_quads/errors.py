@@ -12,6 +12,28 @@ class InputError(ValueError):
     """Invalid input: the package raises this instead of silently adjusting the input."""
 
 
+class MeshRecognitionError(InputError):
+    """An existing mesh is not a refined quad mesh this package can refine.
+
+    Parameters
+    ----------
+    message : str
+        What is wrong.
+    locations : list of (float, float)
+        Where: nodes off the lattice, cells that fill no lattice square, or sides
+        where the 2:1 balance is broken.
+
+    Attributes
+    ----------
+    locations : list of (float, float)
+        As above.
+    """
+
+    def __init__(self, message: str, locations: list[tuple[float, float]]) -> None:
+        super().__init__(message)
+        self.locations = list(locations)
+
+
 class Cancelled(Exception):
     """The run was cancelled through the progress callback."""
 

@@ -14,9 +14,13 @@ _OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
 class Nodes:
     """The nodes of a mesh as integer lattice points, numbered in order of creation."""
 
-    def __init__(self) -> None:
+    def __init__(self, points: list[tuple[int, int]] | None = None) -> None:
         self.index: dict[tuple[int, int], int] = {}
         self.points: list[tuple[int, int]] = []
+        for point in points or []:
+            # A duplicate node (same lattice point) keeps its number; new cells use the first.
+            self.index.setdefault(point, len(self.points))
+            self.points.append(point)
 
     def add(self, ix: int, iy: int) -> int:
         """Return the number of the node at ``(ix, iy)``, creating it if needed."""
@@ -143,9 +147,16 @@ def split_sides(cells: dict[Key, int], leaves: list[Leaf]) -> dict[Key, set[str]
 
 
 def emit_cells(
-    leaves: list[Leaf], sides: dict[Key, set[str]], nodes: Nodes, report: Reporter
+    leaves: list[Leaf],
+    sides: dict[Key, set[str]],
+    nodes: Nodes,
+    report: Reporter,
+    keep: dict[Key, list[list[int]]] | None = None,
 ) -> list[list[int]]:
     """Return the cells of all lattice squares, creating their nodes.
+
+    A square in ``keep`` (refine: unchanged squares of the existing mesh) gets those
+    cells instead of a pattern.
 
     Nodes are created per square in the order of the original generator: corners,
     then for a centre split the centre and the midpoints S, E, N, W, otherwise the
@@ -158,6 +169,9 @@ def emit_cells(
     for i, (ix0, iy0, ix1, iy1, _lvl) in enumerate(leaves):
         if i % report_every == 0:
             report(80 + int(18 * i / n_leaves))
+        if keep and (ix0, iy0, ix1, iy1) in keep:
+            cells += [list(c) for c in keep[(ix0, iy0, ix1, iy1)]]
+            continue
         ixm = (ix0 + ix1) >> 1
         iym = (iy0 + iy1) >> 1
         corners = (

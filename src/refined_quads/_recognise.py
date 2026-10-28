@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -24,12 +25,16 @@ class LatticeSquares:
     level, x, y : numpy.ndarray of int, shape (s,)
         Each lattice square: its level and position, in units of its own side,
         counted from the lattice origin.
+    partial : numpy.ndarray of bool, shape (s,)
+        True for a square that its cells fill only partly (cells removed after
+        generation, such as clipping along water).
     """
 
     face_level: NDArray[np.int64]
     level: NDArray[np.int64]
     x: NDArray[np.int64]
     y: NDArray[np.int64]
+    partial: NDArray[np.bool_]
 
 
 def lattice_squares(
@@ -61,6 +66,12 @@ def lattice_squares(
     the transition patterns use. Checking the nodes keeps a square that is tiled by
     four finer transition squares from being taken for one coarse transition square,
     because the finer squares have nodes at the quarter points of its sides.
+
+    Cells left over are parts of squares from which cells were removed after
+    generation (clipping along water removes single cells, triangles included). They
+    are grouped, coarsest level first, into a square that contains them, whose
+    pattern points hold all their nodes and that overlaps no square found so far;
+    such a square is marked partial. Cells that fit no square stay unrecognised.
     """
     m = len(faces)
     valid = faces >= 0
@@ -112,11 +123,84 @@ def lattice_squares(
         out_x.append(groups[accept, 0])
         out_y.append(groups[accept, 1])
 
+    n_full = sum(len(a) for a in out_level)
+    level_arr = np.concatenate(out_level).astype(np.int64)
+    x_arr = np.concatenate(out_x).astype(np.int64)
+    y_arr = np.concatenate(out_y).astype(np.int64)
+    partial = _partial_squares(
+        face_level, (level_arr, x_arr, y_arr), (xs, ys, valid, x0, y0, x1, y1), levels
+    )
     return LatticeSquares(
         face_level=face_level,
-        level=np.concatenate(out_level).astype(np.int64),
-        x=np.concatenate(out_x).astype(np.int64),
-        y=np.concatenate(out_y).astype(np.int64),
+        level=np.concatenate([level_arr, partial[0]]).astype(np.int64),
+        x=np.concatenate([x_arr, partial[1]]).astype(np.int64),
+        y=np.concatenate([y_arr, partial[2]]).astype(np.int64),
+        partial=np.arange(n_full + len(partial[0])) >= n_full,
+    )
+
+
+def _mark(
+    occupied: list[set[tuple[int, int]]],
+    inside: list[set[tuple[int, int]]],
+    level: int,
+    x: int,
+    y: int,
+) -> None:
+    """Record a square, and record it as content of each of its ancestors."""
+    occupied[level].add((x, y))
+    for coarser in range(level - 1, -1, -1):
+        shift = level - coarser
+        inside[coarser].add((x >> shift, y >> shift))
+
+
+def _partial_squares(
+    face_level: NDArray[np.int64],
+    squares: tuple[NDArray[np.int64], NDArray[np.int64], NDArray[np.int64]],
+    cells: tuple[NDArray[Any], ...],
+    levels: int,
+) -> tuple[NDArray[np.int64], NDArray[np.int64], NDArray[np.int64]]:
+    """Group the cells left over into partly filled squares; set their levels.
+
+    Returns the level and position of every partial square; ``face_level`` is updated.
+    """
+    xs, ys, valid, x0, y0, x1, y1 = cells
+    # Squares found so far, as keys per level: their own key and those of their ancestors.
+    occupied: list[set[tuple[int, int]]] = [set() for _ in range(levels + 1)]
+    inside: list[set[tuple[int, int]]] = [set() for _ in range(levels + 1)]
+
+    for level, x, y in zip(*squares, strict=True):
+        _mark(occupied, inside, int(level), int(x), int(y))
+
+    out: tuple[list[int], list[int], list[int]] = ([], [], [])
+    for level in range(levels + 1):
+        free = np.flatnonzero(face_level < 0)
+        if free.size == 0:
+            break
+        s = 2 ** (levels - level)
+        groups: dict[tuple[int, int], list[int]] = {}
+        for f in free:
+            px, py = int(x0[f] // s), int(y0[f] // s)
+            if x1[f] > px * s + s or y1[f] > py * s + s:
+                continue
+            rx = xs[f][valid[f]] - px * s
+            ry = ys[f][valid[f]] - py * s
+            if not (_on_pattern_point(rx, s) & _on_pattern_point(ry, s)).all():
+                continue
+            if (px, py) in occupied[level] or (px, py) in inside[level]:
+                continue  # overlaps a square found before
+            if any((px >> (level - c), py >> (level - c)) in occupied[c] for c in range(level)):
+                continue  # lies inside a coarser square found before
+            groups.setdefault((px, py), []).append(int(f))
+        for (px, py), members in groups.items():
+            face_level[members] = level
+            _mark(occupied, inside, level, px, py)
+            out[0].append(level)
+            out[1].append(px)
+            out[2].append(py)
+    return (
+        np.asarray(out[0], dtype=np.int64),
+        np.asarray(out[1], dtype=np.int64),
+        np.asarray(out[2], dtype=np.int64),
     )
 
 

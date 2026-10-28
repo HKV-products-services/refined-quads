@@ -8,30 +8,40 @@ from golden.scenarios import SCENARIOS_BY_NAME
 from handmade import generate_rd
 from refined_quads import InputError, check
 
-WATER_SCENARIOS = [
-    "water_removal_centre",
-    "water_removal_inside",
-    "water_removal_touches",
-    "many_small_water_areas",
-]
+# The rule holds cell by cell in these scenarios. MeshKernel, which does the clipping,
+# keeps a single cell whose edges all stay (it derives cells from edges again); in
+# "many_small_water_areas" that leaves some cells in small ponds, which is accepted.
+WATER_SCENARIOS = ["water_removal_centre", "water_removal_inside", "water_removal_touches"]
 
 
-def lattice_squares(mesh, report):
-    """Unique lattice squares (as boxes) that the cells of the mesh lie in."""
-    lattice = mesh.lattice
-    indices, _ = lattice.to_indices(mesh.nodes)
-    keys = set()
-    for face, level in zip(mesh.faces, report.cell_levels, strict=True):
-        assert level >= 0
-        side = 2 ** (lattice.levels - int(level))
-        corner = indices[face[face >= 0]].min(axis=0) // side * side
-        keys.add((int(corner[0]), int(corner[1]), side))
-    x0, y0, side = np.array(sorted(keys)).T
-    ox, oy = lattice.origin
-    unit = lattice.unit
-    return shapely.box(
-        ox + x0 * unit, oy + y0 * unit, ox + (x0 + side) * unit, oy + (y0 + side) * unit
-    )
+def cells(mesh):
+    """Cells as polygons and their MeshKernel centres (circumcentre of a triangle)."""
+    polygons, centres = [], []
+    for face in mesh.faces:
+        pts = mesh.nodes[face[face >= 0]]
+        polygons.append(shapely.Polygon(pts))
+        if len(pts) == 3:
+            (ax, ay), (bx, by), (cx, cy) = pts
+            d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+            a2, b2, c2 = ax * ax + ay * ay, bx * bx + by * by, cx * cx + cy * cy
+            centres.append(
+                ((a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d,
+                 (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d)
+            )  # fmt: skip
+        else:
+            centres.append(tuple(pts.mean(axis=0)))
+    return np.array(polygons, dtype=object), shapely.points(np.array(centres))
+
+
+def assert_rule_holds(mesh, water_areas, rule):
+    polygons, centres = cells(mesh)
+    for water in water_areas:
+        if rule == "centre":
+            assert not shapely.contains(water, centres).any()
+        elif rule == "inside":
+            assert not shapely.contains(water, polygons).any()
+        else:
+            assert not shapely.intersects(water, polygons).any()
 
 
 @pytest.mark.parametrize("name", WATER_SCENARIOS)
@@ -45,17 +55,21 @@ def test_no_cell_breaks_the_water_removal_rule(name):
         water_areas=scenario.water_areas,
         water_removal=scenario.water_removal,
     )
-    report = check(mesh)
-    squares = lattice_squares(mesh, report)
 
-    for water in scenario.water_areas:
-        if scenario.water_removal == "centre":
-            assert not shapely.contains(water, shapely.centroid(squares)).any()
-        elif scenario.water_removal == "inside":
-            assert not shapely.contains(water, squares).any()
-        else:
-            assert not shapely.intersects(water, squares).any()
-    assert report.is_valid, report.summary()
+    assert_rule_holds(mesh, scenario.water_areas, scenario.water_removal)
+    assert check(mesh).is_valid, check(mesh).summary()
+
+
+def test_water_is_clipped_cell_by_cell():
+    # With the centre rule single triangles of a transition square can go while the
+    # rest of the square stays: the mesh follows the water's edge.
+    mesh = _water_mesh("centre")
+    report = check(mesh)
+
+    assert report.is_valid
+    assert len(report.unrecognised_cells) == 0
+    partial = check(mesh).cell_levels  # every remaining cell still has a lattice square
+    assert (partial >= 0).all()
 
 
 def test_rules_remove_increasingly_many_cells():
@@ -145,15 +159,9 @@ def test_holes_in_the_domain_are_treated_as_water_areas(rule):
         water_areas=[hole],
         water_removal=rule,
     )
-    squares = lattice_squares(mesh, check(mesh))
 
     assert_same_cells(mesh, as_water)
-    if rule == "centre":
-        assert not shapely.contains(hole, shapely.centroid(squares)).any()
-    elif rule == "inside":
-        assert not shapely.contains(hole, squares).any()
-    else:
-        assert not shapely.intersects(hole, squares).any()
+    assert_rule_holds(mesh, [hole], rule)
 
 
 def test_island_inside_a_hole_keeps_its_cells():

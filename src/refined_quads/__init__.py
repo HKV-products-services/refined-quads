@@ -9,9 +9,15 @@ from importlib.metadata import PackageNotFoundError, version
 from refined_quads._check import MeshReport, check
 from refined_quads._generate import generate
 from refined_quads._gis import Areas, read_domain, read_refinement_areas, read_water_areas
+from refined_quads._refine import refine
 from refined_quads._ugrid import read_ugrid, write_ugrid
-from refined_quads.errors import Cancelled, InputError, OrthogonalityRepairError
-from refined_quads.mesh import Lattice, Mesh
+from refined_quads.errors import (
+    Cancelled,
+    InputError,
+    MeshRecognitionError,
+    OrthogonalityRepairError,
+)
+from refined_quads.mesh import Lattice, Mesh, RefineResult, ReplacementMap
 from refined_quads.spec import LayerSource, MeshSpec, RefinementSource
 
 try:
@@ -26,10 +32,13 @@ __all__ = [
     "Lattice",
     "LayerSource",
     "Mesh",
+    "MeshRecognitionError",
     "MeshReport",
     "MeshSpec",
     "OrthogonalityRepairError",
+    "RefineResult",
     "RefinementSource",
+    "ReplacementMap",
     "__version__",
     "check",
     "generate",
@@ -37,5 +46,6 @@ __all__ = [
     "read_refinement_areas",
     "read_ugrid",
     "read_water_areas",
+    "refine",
     "write_ugrid",
 ]

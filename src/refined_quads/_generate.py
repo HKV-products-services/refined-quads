@@ -43,8 +43,7 @@ def generate(
         The area the mesh covers; its CRS is the CRS of the mesh and must be
         projected. A lattice square is kept whole when it overlaps the domain, so
         cells along the outer edge may reach slightly outside it. Holes in the domain
-        are treated as water areas: the water removal rule decides which lattice
-        squares along a hole are removed.
+        are clipped like water areas, cell by cell, with the water removal rule.
     cell_size : float
         Side length of the base cell; any positive length.
     refinement_areas : iterable of (shapely geometry, int), or Areas
@@ -60,11 +59,12 @@ def generate(
         Polygons where no cells are kept, because the 1D network carries the flow
         there. Giving water areas applies them.
     water_removal : {"centre", "inside", "touches"}
-        Water removal rule: whether a lattice square touching a water area is removed
-        when its centre lies in water (default), only when it lies completely in
-        water, or as soon as it touches water. The rule is applied to the squares
-        before transition cells are formed, so all cells of a square stay or go
-        together.
+        Water removal rule, applied cell by cell to the finished mesh, as clipping
+        with MeshKernel does: a cell is removed when its circumcentre (triangle) or
+        centroid lies in water (``"centre"``, default, MeshKernel's
+        ``FACES_WITH_INCLUDED_CIRCUMCENTERS``), only when it lies completely in water
+        (``"inside"``), or as soon as it touches water (``"touches"``). The remaining
+        small cells follow the water's edge.
     crs : pyproj.CRS or str or int, optional
         CRS of input that carries none (shapely geometries). Input without CRS
         raises an error unless it is given; input with its own CRS is transformed to
@@ -120,6 +120,7 @@ def generate(
     levels = max((level for _, level in areas), default=0)
     rows = _transition_rows(transition_rows, levels)
     water = _water_areas(water_areas, crs, mesh_crs) + domain_holes(domain_geom)
+    domain_geom = domain_shells(domain_geom)
     if water_removal not in WATER_REMOVAL_RULES:
         allowed = ", ".join(repr(rule) for rule in WATER_REMOVAL_RULES)
         raise InputError(f"water removal rule must be one of {allowed}, got {water_removal!r}")
@@ -172,6 +173,14 @@ def _origin(value: object) -> tuple[float, float]:
     if not all(math.isfinite(v) for v in point):
         raise InputError(f"origin must be finite, got {value!r}")
     return point
+
+
+def domain_shells(domain: BaseGeometry) -> BaseGeometry:
+    """Return the domain with its holes filled (the holes are clipped like water)."""
+    parts = shapely.get_parts(domain)
+    if not any(len(part.interiors) for part in parts):
+        return domain
+    return shapely.union_all(shapely.polygons(shapely.get_exterior_ring(parts)))
 
 
 def domain_holes(domain: BaseGeometry) -> list[BaseGeometry]:
@@ -260,7 +269,7 @@ def _in_mesh_crs(
 
 
 def _to_mesh(
-    vertices: NDArray[np.float64], cells: list[list[int]], lattice: Lattice, crs: CRS
+    vertices: NDArray[np.float64], cells: list[list[int]], lattice: Lattice, crs: CRS | None
 ) -> Mesh:
     """Build a mesh of the used nodes, every face counterclockwise."""
     sizes = np.fromiter((len(cell) for cell in cells), dtype=np.int64, count=len(cells))

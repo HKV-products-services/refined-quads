@@ -1643,6 +1643,7 @@ name = "refined-quads"
 source = { editable = "." }
 default-groups = ["dev", "docs"]
 dependencies = [
+    { name = "meshkernel" },
     { name = "netcdf4" },
     { name = "numpy" },
     { name = "pyogrio" },
@@ -1653,7 +1654,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "hypothesis" },
-    { name = "meshkernel" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -1668,6 +1668,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
+    { name = "meshkernel", specifier = ">=8.3" },
     { name = "netcdf4", specifier = ">=1.6" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pyogrio", specifier = ">=0.7" },
@@ -1678,7 +1679,6 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "hypothesis", specifier = ">=6.170.13" },
-    { name = "meshkernel", specifier = ">=8.3.0" },
     { name = "mypy", specifier = ">=1.13" },
     { name = "pytest", specifier = ">=8.0,<9.2" },
     { name = "pytest-benchmark", specifier = ">=5.3.0" },
