@@ -18,7 +18,7 @@ uv run pytest -m slow        # slow scenarios (also: benchmark, realdata)
 uv run ruff check            # lint
 uv run ruff format --check   # formatting
 uv run mypy                  # strict type check of src/
-uv run mkdocs serve          # documentation at http://127.0.0.1:8000
+uv run zensical serve        # documentation at http://127.0.0.1:8000
 ```
 
 The version comes from Git tags (`v0.1.0` → `0.1.0`).

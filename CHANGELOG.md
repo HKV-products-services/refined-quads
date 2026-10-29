@@ -92,7 +92,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   command line, water areas, refining an existing mesh, D-HYDRO), explanations (refined
   quad meshes, FM orthogonality, why refine starts from the mesh) and the API reference.
   The code on the pages runs during the build and draws the mesh figures
-  (markdown-exec); versions with mike.
+  (markdown-exec). The site is built with Zensical from `mkdocs.yml`; versioned
+  publishing (Zensical's mike fork) is added once the documentation goes online.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 

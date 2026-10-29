@@ -30,7 +30,7 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 | Benchmarks | `uv run pytest -m benchmark --benchmark-json=after.json`, then `uv run python tests/golden/benchmarks.py after.json --baseline before.json` (5% rule: measure before and after back to back on one machine) |
 | Lint / format | `uv run ruff check`, `uv run ruff format` |
 | Types | `uv run mypy` |
-| Docs | `uv run mkdocs build --strict` / `uv run mkdocs serve` |
+| Docs | `uv run zensical build` / `uv run zensical serve` (Zensical reads `mkdocs.yml`; `strict: true` there) |
 
 uv manages Python itself (`.python-version` = 3.12); the chocolatey Python shims on the
 development PC are broken, so do not rely on a system Python.
