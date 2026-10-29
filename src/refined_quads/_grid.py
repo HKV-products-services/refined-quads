@@ -10,7 +10,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+import numpy as np
 import shapely
+from numpy.typing import NDArray
 from shapely.geometry.base import BaseGeometry
 
 Key = tuple[int, int, int, int]
@@ -57,6 +59,12 @@ class Grid:
             self.ox + ix1 * self.unit,
             self.oy + iy1 * self.unit,
         )
+
+    def boxes(self, keys: NDArray[np.int64]) -> NDArray[np.object_]:
+        """Return cells given as rows ``(ix0, iy0, ix1, iy1)`` as shapely boxes."""
+        x = self.ox + keys[:, 0::2] * self.unit
+        y = self.oy + keys[:, 1::2] * self.unit
+        return np.asarray(shapely.box(x[:, 0], y[:, 0], x[:, 1], y[:, 1]), dtype=object)
 
 
 def make_grid(

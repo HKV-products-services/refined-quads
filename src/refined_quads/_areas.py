@@ -3,24 +3,23 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
+import numpy as np
 import shapely
+from numpy.typing import NDArray
 from shapely import STRtree
 from shapely.geometry.base import BaseGeometry
-from shapely.prepared import PreparedGeometry, prep
 
 from refined_quads._progress import Reporter
 
 _log = logging.getLogger("refined_quads._engine")
 
-if TYPE_CHECKING:
-    Prepared = PreparedGeometry[BaseGeometry]
-    #: A refinement area: its level, the prepared polygon and the prepared transition
-    #: zones with the level of the step they belong to, coarsest (largest) zone first.
-    Candidate = tuple[int, Prepared, list[tuple[Prepared, int]]]
+#: A refinement area: its level, the prepared polygon and the prepared transition zones
+#: with the level of the step they belong to, coarsest (largest) zone first.
+Candidate = tuple[int, BaseGeometry, list[tuple[BaseGeometry, int]]]
 
 
 @dataclass(frozen=True)
@@ -30,11 +29,22 @@ class Candidates:
     items: list[Candidate]
     tree: STRtree | None
 
-    def query(self, cell: BaseGeometry) -> tuple[int, ...]:
-        """Return the indices of the candidates whose outermost zone may touch ``cell``."""
-        if self.tree is None:
-            return ()
-        return tuple(sorted(int(i) for i in self.tree.query(cell)))
+    def query(self, cells: NDArray[np.object_]) -> list[tuple[int, ...]]:
+        """Return per cell the sorted candidates whose outermost zone may touch it."""
+        found: list[tuple[int, ...]] = [()] * len(cells)
+        if self.tree is None or not len(cells):
+            return found
+        cell_i, cand_i = self.tree.query(cells)
+        if not len(cell_i):
+            return found
+        order = np.lexsort((cand_i, cell_i))
+        cell_i, cand_i = cell_i[order], cand_i[order]
+        starts = np.flatnonzero(np.diff(cell_i)) + 1
+        for i, group in zip(
+            cell_i[np.r_[0, starts]].tolist(), np.split(cand_i, starts), strict=True
+        ):
+            found[i] = tuple(group.tolist())
+        return found
 
 
 def prepare_refinement_areas(
@@ -70,8 +80,8 @@ def prepare_refinement_areas(
     """
     simplify_tol = cell_size / 8.0
     polys = [
-        (_simplify(geom if geom.is_valid else geom.buffer(0), simplify_tol), level)
-        for geom, level in refinement_areas
+        (_simplify(make_valid(geom, f"refinement area {i}"), simplify_tol), level)
+        for i, (geom, level) in enumerate(refinement_areas)
     ]
     n_polys = len(polys)
     if n_polys:
@@ -91,10 +101,26 @@ def prepare_refinement_areas(
             for inner_lvl in range(lvl, target_lvl):
                 n = transition_rows[inner_lvl]
                 cum += n * (cell_size / (2 ** (inner_lvl + 1)))
-            zones.append((poly.buffer(cum), lvl))
-        items.append((target_lvl, prep(poly), [(prep(z), lvl) for z, lvl in zones]))
+            zone = poly.buffer(cum)
+            shapely.prepare(zone)
+            zones.append((zone, lvl))
+        shapely.prepare(poly)
+        items.append((target_lvl, poly, zones))
         outer.append(zones[0][0] if zones else poly)
     return Candidates(items, STRtree(outer) if items else None)
+
+
+def make_valid(geom: BaseGeometry, what: str) -> BaseGeometry:
+    """Return ``geom`` made valid, keeping only its polygonal parts.
+
+    The structure method keeps every enclosed area (both loops of a bowtie, where
+    ``buffer(0)`` keeps one) and drops collapsed parts such as spikes, which buffering
+    would otherwise turn into areas.
+    """
+    if geom.is_valid:
+        return geom
+    _log.warning("%s is not valid (%s); made valid", what, shapely.is_valid_reason(geom))
+    return shapely.make_valid(geom, method="structure", keep_collapsed=False)
 
 
 def _simplify(geom: BaseGeometry, tolerance: float) -> BaseGeometry:
@@ -117,55 +143,79 @@ def _simplify(geom: BaseGeometry, tolerance: float) -> BaseGeometry:
     return simplified
 
 
-def required_level(
-    cell: BaseGeometry, base_lvl: int, cell_cands: tuple[int, ...], items: list[Candidate]
-) -> tuple[int, int, list[int]]:
-    """Return the level a cell needs, the level fixed for its children and their candidates.
+def required_levels(
+    cells: NDArray[np.object_],
+    base_lvl: NDArray[np.int64],
+    cell_cands: Sequence[tuple[int, ...]],
+    items: list[Candidate],
+) -> tuple[NDArray[np.int64], NDArray[np.int64], list[tuple[int, ...]]]:
+    """Return per cell the level it needs, the level fixed for its children and their candidates.
 
     Parameters
     ----------
-    cell : shapely geometry
-        The cell.
-    base_lvl : int
-        Level fixed by an ancestor that lies completely inside an area or zone.
-    cell_cands : tuple of int
-        Candidates that may still touch the cell.
+    cells : ndarray of shapely geometry
+        The cells.
+    base_lvl : ndarray of int
+        Per cell the level fixed by an ancestor that lies completely inside an area or
+        zone.
+    cell_cands : sequence of tuple of int
+        Per cell the candidates that may still touch it.
     items : list of Candidate
         All candidates.
 
     Returns
     -------
-    req : int
-        Required level of the cell.
-    child_base : int
+    req : ndarray of int
+        Required level per cell.
+    child_base : ndarray of int
         Level fixed for all descendants (the cell lies completely inside the area or
         zone that gives it).
-    keep : list of int
-        Candidates the children still have to test. A candidate the cell does not
-        touch at all (outermost zone included) cannot touch its children either.
+    keep : list of tuple of int
+        Per cell the candidates its children still have to test, sorted. A candidate
+        the cell does not touch at all (outermost zone included) cannot touch its
+        children either.
     """
-    req = base_lvl
-    child_base = base_lvl
-    keep = []
-    for ci in cell_cands:
-        level, p_main, zp = items[ci]
-        if p_main.intersects(cell):
-            req = max(req, level)
-            if p_main.contains_properly(cell):
-                child_base = max(child_base, level)
-            else:
-                keep.append(ci)
-        else:
-            # Outside the area: the finest touching zone decides. Finer zones are
-            # subsets of coarser ones, so the first hit in reversed order is the
-            # finest, and untouched finer zones stay out of reach for children.
-            for p_buf, lvl_candidate in reversed(zp):
-                if p_buf.intersects(cell):
-                    contrib = lvl_candidate + 1
-                    req = max(req, contrib)
-                    if p_buf.contains_properly(cell):
-                        child_base = max(child_base, contrib)
-                    else:
-                        keep.append(ci)
-                    break
-    return req, child_base, keep
+    req = base_lvl.copy()
+    child_base = base_lvl.copy()
+    keep: list[list[int]] = [[] for _ in cell_cands]
+    cells_of: defaultdict[int, list[int]] = defaultdict(list)
+    for i, cands in enumerate(cell_cands):
+        for ci in cands:
+            cells_of[ci].append(i)
+    # Candidates in ascending order, so every cell's list of kept candidates is sorted.
+    for ci in sorted(cells_of):
+        level, area, zones = items[ci]
+        idx = np.asarray(cells_of[ci], dtype=np.int64)
+        hit = shapely.intersects(area, cells[idx])
+        _touch(area, level, idx[hit], cells, ci, req, child_base, keep)
+        # Outside the area: the finest touching zone decides. Finer zones are subsets
+        # of coarser ones, so the first hit in reversed order is the finest, and
+        # untouched finer zones stay out of reach for children.
+        rest = idx[~hit]
+        for zone, lvl in reversed(zones):
+            if not rest.size:
+                break
+            hit = shapely.intersects(zone, cells[rest])
+            _touch(zone, lvl + 1, rest[hit], cells, ci, req, child_base, keep)
+            rest = rest[~hit]
+    return req, child_base, [tuple(k) for k in keep]
+
+
+def _touch(
+    geom: BaseGeometry,
+    level: int,
+    idx: NDArray[np.int64],
+    cells: NDArray[np.object_],
+    ci: int,
+    req: NDArray[np.int64],
+    child_base: NDArray[np.int64],
+    keep: list[list[int]],
+) -> None:
+    """Apply an area or zone of ``level`` to the cells ``idx`` that touch it."""
+    if not idx.size:
+        return
+    req[idx] = np.maximum(req[idx], level)
+    inside = shapely.contains_properly(geom, cells[idx])
+    child_base[idx[inside]] = np.maximum(child_base[idx[inside]], level)
+    for i in idx[~inside].tolist():
+        keep[i].append(ci)

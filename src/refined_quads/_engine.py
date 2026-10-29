@@ -33,9 +33,8 @@ import numpy as np
 import shapely
 from numpy.typing import NDArray
 from shapely.geometry.base import BaseGeometry
-from shapely.prepared import prep
 
-from refined_quads._areas import Candidates, prepare_refinement_areas
+from refined_quads._areas import Candidates, make_valid, prepare_refinement_areas
 from refined_quads._balance import balance_2_to_1, eliminate_t_junctions
 from refined_quads._clip import clip_cells
 from refined_quads._conformity import count_hanging_nodes, head_to_toe, resolve_hanging_nodes
@@ -126,11 +125,11 @@ def generate_cells(
         If the orthogonality repair does not close.
     """
     report = Reporter(progress)
-    domain_valid = domain if domain.is_valid else domain.buffer(0)
+    domain_valid = make_valid(domain, "the domain")
     grid = make_grid(domain_valid.bounds, cell_size, levels, origin)
     water = prepare_water(water_areas, water_removal)
     candidates = prepare_refinement_areas(refinement_areas, cell_size, transition_rows, report)
-    queue = base_cells(prep(domain_valid), grid, candidates, report)
+    queue = base_cells(domain_valid, grid, candidates, report)
     vertices, cells = _run(queue, grid, candidates, domain_valid, water, None, progress, report)
     return vertices, cells, (grid.ox, grid.oy)
 
@@ -213,7 +212,7 @@ def refine_cells(
     report = Reporter(progress)
     grid = Grid(ox=origin[0], oy=origin[1], unit=cell_size / (2**levels), cell_size=cell_size,
                 levels=levels, nx=0, ny=0)  # fmt: skip
-    domain_valid = None if domain is None else (domain if domain.is_valid else domain.buffer(0))
+    domain_valid = None if domain is None else make_valid(domain, "the domain")
     water = prepare_water(water_areas, water_removal)
     candidates = prepare_refinement_areas(refinement_areas, cell_size, transition_rows, report)
     queue = existing_cells(existing.leaves, grid, candidates)

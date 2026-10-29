@@ -11,6 +11,7 @@ from numpy.typing import NDArray
 from shapely import STRtree
 from shapely.geometry.base import BaseGeometry
 
+from refined_quads._areas import make_valid
 from refined_quads._grid import Grid, Leaf
 
 
@@ -38,7 +39,7 @@ def prepare_water(water_areas: Sequence[BaseGeometry], rule: str) -> WaterAreas:
     WaterAreas
         The prepared water areas.
     """
-    valid = [g if g.is_valid else g.buffer(0) for g in water_areas]
+    valid = [make_valid(g, f"water area {i}") for i, g in enumerate(water_areas)]
     return WaterAreas(np.asarray(valid, dtype=object), STRtree(valid) if valid else None, rule)
 
 
@@ -62,21 +63,10 @@ def select_leaves(leaves: list[Leaf], domain: BaseGeometry | None, grid: Grid) -
     """
     if not leaves or domain is None:
         return list(leaves)
-    ox, oy, unit = grid.ox, grid.oy, grid.unit
-    rx0 = np.array([ox + c[0] * unit for c in leaves])
-    ry0 = np.array([oy + c[1] * unit for c in leaves])
-    rx1 = np.array([ox + c[2] * unit for c in leaves])
-    ry1 = np.array([oy + c[3] * unit for c in leaves])
-    boxes = shapely.box(rx0, ry0, rx1, ry1)
-    contained = shapely.contains(domain, boxes)
-    intersects = ~contained & shapely.intersects(domain, boxes)
-    kept: list[Leaf] = []
-    for i, leaf in enumerate(leaves):
-        if intersects[i]:
-            clipped = boxes[i].intersection(domain)
-            if clipped.is_empty or clipped.area < 1e-6:
-                continue
-        elif not contained[i]:
-            continue
-        kept.append(leaf)
-    return kept
+    boxes = grid.boxes(np.asarray([leaf[:4] for leaf in leaves], dtype=np.int64))
+    shapely.prepare(domain)
+    keep = shapely.contains(domain, boxes)
+    partly = np.flatnonzero(~keep & shapely.intersects(domain, boxes))
+    clipped = shapely.intersection(boxes[partly], domain)
+    keep[partly] = ~shapely.is_empty(clipped) & (shapely.area(clipped) >= 1e-6)
+    return [leaf for leaf, k in zip(leaves, keep.tolist(), strict=True) if k]

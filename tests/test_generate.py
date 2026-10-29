@@ -1,7 +1,7 @@
 import math
 
 import pytest
-from shapely import LineString, Point, Polygon, box
+from shapely import LineString, MultiPolygon, Point, Polygon, box
 
 from golden.compare import assert_same_cells
 from golden.masters import MASTERS_DIR, load_master
@@ -95,6 +95,21 @@ def test_invalid_level_raises_input_error(level):
 def test_invalid_refinement_area_raises_input_error(area):
     with pytest.raises(InputError, match="refinement area 0"):
         generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[area])
+
+
+def test_bowtie_refinement_area_refines_both_loops_with_a_warning(caplog):
+    bowtie = Polygon([(100, 100), (300, 200), (300, 100), (100, 200)])
+    loops = MultiPolygon(
+        [
+            Polygon([(100, 100), (200, 150), (100, 200)]),
+            Polygon([(200, 150), (300, 200), (300, 100)]),
+        ]
+    )
+
+    mesh = generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(bowtie, 2)])
+
+    assert_same_cells(mesh, generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(loops, 2)]))
+    assert "refinement area 0 is not valid" in caplog.text
 
 
 @pytest.mark.parametrize(

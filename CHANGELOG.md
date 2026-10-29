@@ -130,3 +130,12 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   `InputError`, as do a missing or invalid level (naming the feature), a feature
   without geometry or that is not a polygon, and a file with several layers when no
   layer is named.
+- Intended output change for invalid polygons only: a domain, refinement area or water
+  area that is not valid is made valid with shapely's `make_valid` (structure method,
+  only polygonal parts) instead of `buffer(0)`, and a warning is logged. A
+  self-intersecting polygon such as a bowtie keeps all its loops, where `buffer(0)` kept
+  one. Valid input gives the same cells.
+- The quadtree is built one generation at a time with the geometry tests in bulk
+  (shapely's vectorised predicates on prepared geometries, one STRtree query for all
+  start cells), and the selection of lattice squares in the domain clips in bulk. The
+  cells, and their order, are unchanged; on the benchmarks generate is 3-14% faster.
