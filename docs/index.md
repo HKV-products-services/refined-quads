@@ -47,11 +47,12 @@ print(svg(mesh, areas=[Point(155_250, 463_240).buffer(70)]))
 The package is not on PyPI yet. Install it from the repository with uv:
 
 ```bash
-uv add "refined-quads @ git+https://github.com/<organisation>/refined-quads"
+uv add "refined-quads @ git+https://github.com/HKV-products-services/refined-quads"
 ```
 
 Its dependencies (numpy, shapely, netCDF4, pyogrio, pyproj and meshkernel) all come as
-wheels; no separate GDAL installation is needed.
+wheels; no separate GDAL installation is needed. On macOS the meshkernel wheel needs
+OpenMP from Homebrew (`brew install libomp`); the package is tested on Windows and Linux.
 
 ## Where to go next
 
