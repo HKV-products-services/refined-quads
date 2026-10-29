@@ -16,6 +16,8 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 - Replacing own code by shapely/numpy or vectorising: only if the golden masters still
   give the same cells and the benchmark is not more than 5% slower.
 - Invalid input raises an error; never silently adjust (levels, transition rows, CRS).
+  Exception: invalid polygons (domain, refinement areas, water areas) are made valid
+  with `make_valid` and a logged warning, not an error.
 - Public API only via the top-level package; internal modules start with an underscore.
 - Use the terms from `CONTEXT.md`.
 
