@@ -7,6 +7,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-12
+
 ### Changed
 
 - Intended output change (ADR-0004): `generate` and `refine` no longer leave a hole
