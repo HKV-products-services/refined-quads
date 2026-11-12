@@ -8,9 +8,9 @@ dynamic = ["version"]
 description = "Generate and refine refined quad meshes (locally halved axis-aligned squares) for D-Flow FM."
 readme = "README.md"
 requires-python = ">=3.12"
-# Placeholder: the licence still has to be agreed with HKV and Svasek before publication.
-license = "LicenseRef-Proprietary"
-authors = [{ name = "HKV" }, { name = "Svasek Hydraulics" }]
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "HKV lijn in water" }, { name = "Svasek Hydraulics" }]
 keywords = ["mesh", "quadtree", "ugrid", "d-flow-fm", "hydrodynamics"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -31,6 +31,11 @@ dependencies = [
     "pyproj>=3.6",
     "meshkernel>=8.3",
 ]
+
+[project.urls]
+Documentation = "https://hkv-products-services.github.io/refined-quads"
+Source = "https://github.com/HKV-products-services/refined-quads"
+Changelog = "https://github.com/HKV-products-services/refined-quads/blob/main/CHANGELOG.md"
 
 [project.scripts]
 refined-quads = "refined_quads.cli:main"

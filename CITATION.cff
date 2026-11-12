@@ -1,0 +1,20 @@
+---
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: refined-quads
+abstract: >-
+  Generate and refine refined quad meshes for D-Flow FM: axis-aligned squares on a
+  fixed lattice, locally refined by repeated halving, with transition cells only where
+  refinement levels meet.
+authors:
+  - name: "HKV lijn in water"
+  - name: "Svasek Hydraulics"
+repository-code: "https://github.com/HKV-products-services/refined-quads"
+url: "https://hkv-products-services.github.io/refined-quads"
+license: GPL-3.0-or-later
+keywords:
+  - mesh
+  - quadtree
+  - UGRID
+  - D-Flow FM
+  - hydrodynamics

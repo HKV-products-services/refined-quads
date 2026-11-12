@@ -94,6 +94,7 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   The code on the pages runs during the build and draws the mesh figures
   (markdown-exec). The site is built with Zensical from `mkdocs.yml`; versioned
   publishing (Zensical's mike fork) is added once the documentation goes online.
+- Licence: GNU GPL v3 or later (`LICENSE`), with `CITATION.cff`.
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 
