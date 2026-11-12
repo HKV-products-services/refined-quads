@@ -84,6 +84,16 @@ uv run quartodoc build           # API reference from the docstrings
 uv run quarto preview            # live preview; `quarto render` builds docs/_site/
 ```
 
+Quarto must be on your `PATH`. On Windows, make sure
+`C:\Program Files\Quarto\bin` is included in the `Path` environment variable.
+After updating it, open a new terminal or reload `PATH` in your current PowerShell
+session, then start the preview from `docs/`:
+
+```powershell
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+uv run quarto preview
+```
+
 ### Releases
 
 The version comes from Git tags (`v0.1.0` → `0.1.0`). Publishing a GitHub release
