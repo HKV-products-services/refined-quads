@@ -194,6 +194,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../adr/0003-no-bed-level-in-the-net-file.html">
  <span class="dropdown-text">No bed level in the net file; the bed level goes in as samples</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../adr/0004-no-holes-meshkernel-closes.html">
+ <span class="dropdown-text">No holes that MeshKernel closes: small water areas keep their cells</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item">
@@ -259,16 +263,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    max_allowed_orthogonality,</span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    clockwise_cells,</span>
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    unrecognised_cells,</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    closable_holes,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Result of :func:<code>check</code>.</p>
 <p>Locations are coordinates <code>(x, y)</code> in the CRS of the mesh, so they can be shown on a map.</p>
 <section id="attributes" class="level2 doc-section doc-section-attributes">
 <h2 class="doc-section doc-section-attributes anchored" data-anchor-id="attributes">Attributes</h2>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 10%">
-<col style="width: 14%">
-<col style="width: 75%">
+<col style="width: 6%">
+<col style="width: 8%">
+<col style="width: 84%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -347,6 +352,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>unrecognised_cells</td>
 <td>numpy.ndarray of int</td>
 <td>Cells that are neither a lattice square nor part of a group of transition cells that fills one; their level is unknown, so they are left out of <code>cells_per_level</code> and the 2:1 check.</td>
+</tr>
+<tr class="odd">
+<td>closable_holes</td>
+<td>numpy.ndarray of float, shape (k, 2)</td>
+<td>Centres of holes that MeshKernel makes a cell of when it builds the cells from nodes and edges, as hydrolib (<code>mesh2d_from_netcdf</code>) and the D-HYDRO GUI do: a ring of at most six nodes around no cell. Information only: a hole of four nodes becomes an ordinary cell, but one of five or six nodes can be a cell D-Flow FM rejects as not orthogonal (ADR-0004).</td>
 </tr>
 </tbody>
 </table>
