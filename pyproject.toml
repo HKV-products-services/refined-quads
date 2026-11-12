@@ -43,7 +43,7 @@ refined-quads = "refined_quads.cli:main"
 [dependency-groups]
 dev = [
     # pytest-benchmark 5.3.0 reads Node._nodeid, which pytest 9.2 removed.
-    "pytest>=8.0,<9.2",
+    "pytest>=8.0,<9.3",
     "pytest-timeout>=2.3",
     "ruff>=0.8",
     "mypy>=1.13",
@@ -55,7 +55,7 @@ dev = [
 # Quarto itself is not a Python package: install it separately (see README.md).
 docs = [
     # quartodoc 0.11 passes a numpy-parser option that griffe 2 removed.
-    "griffe>=1.0,<2",
+    "griffe>=1.0,<3",
     "ipykernel>=7.4.0",
     "matplotlib>=3.8",
     "nbclient>=0.11.0",
