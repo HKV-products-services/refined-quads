@@ -14,15 +14,15 @@ from typing import Any, cast
 
 from pyproj import CRS
 
-from refined_quads._engine import WATER_REMOVAL_RULES
-from refined_quads._generate import WaterRemovalRule, generate
-from refined_quads._gis import (
+from refined_quads._generate.engine import WATER_REMOVAL_RULES
+from refined_quads._generate.generate import WaterRemovalRule, generate
+from refined_quads._io.gis import (
     Areas,
     read_domain,
     read_refinement_areas,
     read_water_areas,
 )
-from refined_quads._refine import refine
+from refined_quads._refine.refine import refine
 from refined_quads.errors import InputError
 from refined_quads.mesh import Mesh, RefineResult
 

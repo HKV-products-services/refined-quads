@@ -1,0 +1,40 @@
+---
+# Install once with `uv run pre-commit install`; run on everything with
+# `uv run pre-commit run --all-files`. CI runs the same hooks.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [--config-file=.yamllint.yaml]
+
+  # No pydoclint (in the HKV template): it compares the types in docstrings with the
+  # annotations, and the docstrings here describe types in words ("list of (float, float)").
+  # ruff checks the docstrings (numpy convention), mypy the annotations.
+
+  # ruff from the project environment, so the hooks and `uv run ruff` use one version.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --frozen ruff check --fix --exit-non-zero-on-fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --frozen ruff format
+        language: system
+        types_or: [python, pyi]

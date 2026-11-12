@@ -1,0 +1,112 @@
+---
+project:
+  type: website
+  # Agent instructions (agents/) and the plotting helper (snippets/) are not part of the site.
+  render:
+    - "*.qmd"
+    - "tutorial/"
+    - "how-to/"
+    - "explanation/"
+    - "adr/"
+    - "reference/"
+  # Code cells run in docs/, so `snippets/` is importable from every page.
+  execute-dir: project
+
+website:
+  title: "refined-quads"
+  description: "Generate and refine refined quad meshes for D-Flow FM."
+  repo-url: https://github.com/HKV-products-services/refined-quads
+  page-navigation: true
+  navbar:
+    left:
+      - text: "Tutorial"
+        file: tutorial/first-mesh.qmd
+      - text: "How-to guides"
+        menu:
+          - how-to/gis-layers.qmd
+          - how-to/toml-cli.qmd
+          - how-to/water-areas.qmd
+          - how-to/refine.qmd
+          - how-to/d-hydro.qmd
+      - text: "Explanation"
+        menu:
+          - explanation/refined-quad-mesh.qmd
+          - explanation/orthogonality.qmd
+          - explanation/refine.qmd
+          - text: "---"
+          - adr/index.qmd
+          - adr/0001-refine-from-existing-mesh.qmd
+          - adr/0002-output-contract-same-cells.qmd
+      - text: "Python API"
+        file: reference/index.qmd
+    right:
+      - icon: github
+        href: https://github.com/HKV-products-services/refined-quads
+        aria-label: GitHub
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-copy: true
+
+execute:
+  # A failing code cell fails the build.
+  error: false
+
+quartodoc:
+  style: pkgdown
+  dir: reference
+  title: API reference
+  package: refined_quads
+  parser: numpy
+  dynamic: true
+  rewrite_all_pages: true
+  options:
+    include_inherited: false
+    include_empty: true
+    include_attributes: true
+    include_classes: true
+    include_functions: true
+  sections:
+    - title: Generate, refine and check
+      desc: Everything public is available from the top-level package `refined_quads`.
+      contents:
+        - generate
+        - refine
+        - check
+        - MeshReport
+    - title: Meshes
+      contents:
+        - Mesh
+        - Lattice
+        - RefineResult
+        - ReplacementMap
+    - title: GIS input
+      contents:
+        - read_domain
+        - read_refinement_areas
+        - read_water_areas
+        - Areas
+    - title: UGRID net files
+      contents:
+        - read_ugrid
+        - write_ugrid
+    - title: Runs from a TOML file
+      contents:
+        - MeshSpec
+        - RefineSpec
+        - LayerSource
+        - RefinementSource
+    - title: Errors
+      contents:
+        - InputError
+        - Cancelled
+        - MeshRecognitionError
+        - OrthogonalityRepairError
+    - title: Command line
+      desc: Exit codes 0 success, 1 the run failed, 2 invalid input or arguments.
+      package: refined_quads.cli
+      contents:
+        - main
+        - build_parser

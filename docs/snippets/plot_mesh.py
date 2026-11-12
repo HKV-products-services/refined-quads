@@ -1,4 +1,8 @@
-"""Draw meshes as inline SVG while the documentation is built (markdown-exec)."""
+"""Draw meshes as inline SVG while the documentation is built.
+
+``svg`` and ``svg_row`` return a raw HTML block; print it from a Quarto cell with
+``#| output: asis``.
+"""
 
 import io
 
@@ -64,4 +68,4 @@ def _to_svg(fig):
     fig.savefig(buffer, format="svg")
     plt.close(fig)
     text = buffer.getvalue()
-    return text[text.index("<svg") :]
+    return "```{=html}\n" + text[text.index("<svg") :] + "\n```\n"

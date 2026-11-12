@@ -18,7 +18,10 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 - Invalid input raises an error; never silently adjust (levels, transition rows, CRS).
   Exception: invalid polygons (domain, refinement areas, water areas) are made valid
   with `make_valid` and a logged warning, not an error.
-- Public API only via the top-level package; internal modules start with an underscore.
+- Public API only via the top-level package. Internal code lives in subpackages whose
+  name starts with an underscore, grouped by task: `_generate/`, `_refine/`, `_check/`,
+  `_io/`, `_common/` (the modules inside have plain names). The test folders mirror them
+  (`tests/generate/`, ...); tests of the public layer (`cli`, `mesh`) stay in `tests/`.
 - Use the terms from `CONTEXT.md`.
 
 ## Commands
@@ -28,9 +31,9 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 | Install | `uv sync` |
 | Fast tests | `uv run pytest` (slow/benchmark/realdata via `-m <marker>`) |
 | Benchmarks | `uv run pytest -m benchmark --benchmark-json=after.json`, then `uv run python tests/golden/benchmarks.py after.json --baseline before.json` (5% rule: measure before and after back to back on one machine) |
-| Lint / format | `uv run ruff check`, `uv run ruff format` |
+| Lint / format | `uv run pre-commit run --all-files` (ruff check and format, yamllint, file hygiene) |
 | Types | `uv run mypy` |
-| Docs | `uv run mkdocs build --strict` / `uv run mkdocs serve` |
+| Docs | in `docs/`: `uv run quartodoc build`, then `uv run quarto render` (or `quarto preview`). Quarto is a separate install (`C:\Program Files\Quarto\bin`); CI fails on any `WARN` in the render output |
 
 uv manages Python itself (`.python-version` = 3.12); the chocolatey Python shims on the
 development PC are broken, so do not rely on a system Python.

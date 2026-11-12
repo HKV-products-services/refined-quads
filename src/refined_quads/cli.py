@@ -13,10 +13,10 @@ from pathlib import Path
 import numpy as np
 
 from refined_quads import __version__
-from refined_quads._check import check
-from refined_quads._engine import WATER_REMOVAL_RULES
-from refined_quads._gis import write_points, write_problem_points
-from refined_quads._ugrid import read_ugrid, write_ugrid
+from refined_quads._check.check import check
+from refined_quads._generate.engine import WATER_REMOVAL_RULES
+from refined_quads._io.gis import write_points, write_problem_points
+from refined_quads._io.ugrid import read_ugrid, write_ugrid
 from refined_quads.errors import InputError, MeshRecognitionError, OrthogonalityRepairError
 from refined_quads.mesh import Mesh
 from refined_quads.spec import MeshSpec, RefineSpec

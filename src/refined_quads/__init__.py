@@ -6,11 +6,11 @@ refined by repeated halving, with transition cells only where refinement levels 
 
 from importlib.metadata import PackageNotFoundError, version
 
-from refined_quads._check import MeshReport, check
-from refined_quads._generate import generate
-from refined_quads._gis import Areas, read_domain, read_refinement_areas, read_water_areas
-from refined_quads._refine import refine
-from refined_quads._ugrid import read_ugrid, write_ugrid
+from refined_quads._check.check import MeshReport, check
+from refined_quads._generate.generate import generate
+from refined_quads._io.gis import Areas, read_domain, read_refinement_areas, read_water_areas
+from refined_quads._io.ugrid import read_ugrid, write_ugrid
+from refined_quads._refine.refine import refine
 from refined_quads.errors import (
     Cancelled,
     InputError,

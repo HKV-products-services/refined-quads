@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/). Any intended change to the cells a given
-input produces is at least a minor version (see `docs/adr/0002-output-contract-same-cells.md`).
+input produces is at least a minor version (see `docs/adr/0002-output-contract-same-cells.qmd`).
 
 ## [Unreleased]
 
@@ -91,8 +91,12 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 - Documentation: a tutorial (a first mesh), how-to guides (GIS layers, TOML and the
   command line, water areas, refining an existing mesh, D-HYDRO), explanations (refined
   quad meshes, FM orthogonality, why refine starts from the mesh) and the API reference.
-  The code on the pages runs during the build and draws the mesh figures
-  (markdown-exec); versions with mike.
+  The site is built with Quarto, as in the HKV package template; the code on the pages
+  runs during the build and draws the mesh figures, and quartodoc writes the API
+  reference. CI publishes it to GitHub Pages from main once the repository is public.
+- Licence: GNU GPL v3 or later (`LICENSE`), with `CITATION.cff`.
+- pre-commit hooks (file hygiene, yamllint, pydoclint, ruff), also run in CI.
+- Publishing to PyPI when a GitHub release is published (trusted publishing).
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 

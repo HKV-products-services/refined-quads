@@ -8,9 +8,9 @@ dynamic = ["version"]
 description = "Generate and refine refined quad meshes (locally halved axis-aligned squares) for D-Flow FM."
 readme = "README.md"
 requires-python = ">=3.12"
-# Placeholder: the licence still has to be agreed with HKV and Svasek before publication.
-license = "LicenseRef-Proprietary"
-authors = [{ name = "HKV" }, { name = "Svasek Hydraulics" }]
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "HKV lijn in water" }, { name = "Svasek Hydraulics" }]
 keywords = ["mesh", "quadtree", "ugrid", "d-flow-fm", "hydrodynamics"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -32,6 +32,11 @@ dependencies = [
     "meshkernel>=8.3",
 ]
 
+[project.urls]
+Documentation = "https://hkv-products-services.github.io/refined-quads"
+Source = "https://github.com/HKV-products-services/refined-quads"
+Changelog = "https://github.com/HKV-products-services/refined-quads/blob/main/CHANGELOG.md"
+
 [project.scripts]
 refined-quads = "refined_quads.cli:main"
 
@@ -45,13 +50,17 @@ dev = [
     "types-shapely>=2.1.0.20260728",
     "hypothesis>=6.170.13",
     "pytest-benchmark>=5.3.0",
+    "pre-commit>=4.0",
 ]
+# Quarto itself is not a Python package: install it separately (see README.md).
 docs = [
-    "markdown-exec>=1.9",
+    # quartodoc 0.11 passes a numpy-parser option that griffe 2 removed.
+    "griffe>=1.0,<2",
+    "ipykernel>=7.4.0",
     "matplotlib>=3.8",
-    "mike>=2.1",
-    "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.27",
+    "nbclient>=0.11.0",
+    "nbformat>=5.11.1",
+    "quartodoc>=0.11.1",
 ]
 
 [tool.uv]
@@ -65,7 +74,7 @@ fallback-version = "0.0.0"
 packages = ["src/refined_quads"]
 
 [tool.hatch.build.targets.sdist]
-exclude = [".scratch", ".github", "site"]
+exclude = [".scratch", ".github", "docs/_site", "docs/.quarto", "docs/reference"]
 
 [tool.ruff]
 line-length = 100
@@ -97,6 +106,9 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+# The test folders mirror the subpackages of src/; the shared helpers (`golden`, `handmade`)
+# are imported from the tests root.
+pythonpath = ["tests"]
 # The fast suite skips slow, benchmark and realdata tests; pass `-m <marker>` to run them.
 addopts = [
     "-ra",
