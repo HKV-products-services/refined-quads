@@ -206,6 +206,28 @@ rebuilt cells. Leave out the `[Initial] bedlevel` blocks: they would overwrite t
 Tested with D-Flow FM 2026.02: every cell gets a bed level between the lowest and the
 highest of its node values.
 
+### Which bedLevType
+
+"Face" means two opposite things here. In the net file (UGRID 1.0) a face is a **cell**:
+`mesh2d_face_z` is a level per cell. In the description of `bedLevType` in the MDU,
+"at face" means at a **cell side** through which water flows (a flow link or u-point),
+the finite-volume meaning. This table uses cell, cell side and node only.
+
+| `bedLevType` | Input | Level of a cell side | Bed level of the cell |
+| --- | --- | --- | --- |
+| 1 | per cell: samples (or `mesh2d_face_z`) | not measured (MDU: the higher of the two cells) | the cell's own value |
+| 2 | per cell side: samples | the sample | not measured |
+| 3 | per node: `mesh2d_node_z` | mean of its two nodes | the lowest of its cell sides |
+| 4 | per node | the lower of its two nodes | the lowest of its cell sides, so its lowest node |
+| 5 | per node | the higher of its two nodes | the lowest of its cell sides |
+| 6 | per node | not measured | mean of its nodes |
+
+Only cell sides shared with another cell count; sides on the edge of the mesh do not.
+The cell formulas were measured with D-Flow FM 2026.02 on a mesh of 849 cells: each
+matches the bed level D-Flow FM uses in every cell to 0.1 mm. In short: 1 gives each
+cell exactly its own value; 6 the mean of its nodes; 4 its lowest node; with 3 and 5 one
+low cell side makes the whole cell low.
+
 ::: {.callout-note title="Net files written by refined-quads 0.1.x"}
 These contain `Mesh2d_node_z` with -999. After a clip with MeshKernel that array keeps
 its old length and saving fails with "shape mismatch". Before saving, empty it:
