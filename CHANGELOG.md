@@ -7,6 +7,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-12
+
 ### Changed
 
 - `write_ugrid` no longer writes `Mesh2d_node_z` and `Mesh2d_face_z` (-999 for every node
