@@ -1,0 +1,41 @@
+---
+title: "No bed level in the net file; the bed level goes in as samples"
+---
+
+`write_ugrid` writes the 2D mesh without `Mesh2d_node_z` and `Mesh2d_face_z`. The bed
+level is given to D-Flow FM as samples (`x y z` per cell centre) in the field file,
+not as a value per cell or node in the net file.
+
+Up to 0.1.1 both variables were written with -999 for every node and face, as the
+D-HYDRO mesh generator export does. That caused two problems, found on 2026-11-12 with
+D-HYDRO Suite 2026.02:
+
+- **hydrolib.** `mesh2d_from_netcdf` reads the -999 arrays into the network. A clip with
+  MeshKernel (`mesh2d_clip`) removes nodes but leaves `mesh2d_node_z` at its old length,
+  and saving the model (`dimr.save`) fails with a shape mismatch.
+- **D-HYDRO GUI.** The GUI rebuilds the 2D cells from nodes and edges and also closes
+  small gaps, so it can have more cells than the file. A bed level per cell
+  (`mesh2d_face_z`) then no longer fits and the import fails ("number of values is not
+  equal to multiple of all argument values"). On the Geul model (277,206 cells) MeshKernel
+  also built one extra cell on reading, in another order.
+
+## Considered Options
+
+- **Keep the -999 variables (the export structure).** Rejected for the two problems above.
+- **Write the bed level per cell (`mesh2d_face_z`) from a raster.** Rejected: D-Flow FM
+  and DIMR use it, but the GUI rejects it once it rebuilds the cells.
+- **Write the cells as MeshKernel rebuilds them, so the GUI agrees.** Rejected: that
+  adds cells on gaps that the model build removes on purpose, and it ties the file to
+  one MeshKernel version.
+
+## Consequences
+
+- The net file has the structure of the D-HYDRO export minus the two bed level
+  variables; the structure test compares with the old writer's file on that basis.
+- The documentation (Use the mesh in D-HYDRO) gives the bed level as `bodem_2d.xyz`
+  with two `[Initial] bedlevel` blocks at the top of the field file, `bedLevType = 1`.
+  Tested on the Geul model: D-Flow FM gives every cell exactly the sampled level, and
+  the model loads in the GUI.
+- `read_ugrid` still reads files that have the variables; it ignores them.
+- A net file without bed level and without samples runs with `BedLevUni` everywhere,
+  without a warning.

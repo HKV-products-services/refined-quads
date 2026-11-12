@@ -16,9 +16,6 @@ from refined_quads._io.gis import crs_cf_attributes
 from refined_quads.errors import InputError
 from refined_quads.mesh import Mesh
 
-#: Bed level written for every node and face: no data yet, recognisable in the D-HYDRO GUI
-#: and distinguishable from a real 0 m. Written without a fill value, so it is not masked.
-MESH_Z_NODATA = -999.0
 _FILL_INT = np.int32(-999)
 _FILL_FLOAT = np.float64(-999.0)
 
@@ -80,11 +77,13 @@ def write_ugrid(mesh: Mesh, path: str | os.PathLike[str]) -> None:
     Notes
     -----
     The structure is that of the D-HYDRO mesh generator export: the ``Mesh2d``
-    topology with nodes, edges and faces, edge and face coordinates, face bounds, and
-    node and face z set to -999 (no data) without a fill value, so readers do not
-    mask them. A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the
-    D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a
-    mesh without CRS gets no CRS variable.
+    topology with nodes, edges and faces, edge and face coordinates and face bounds.
+    There is no bed level (``Mesh2d_node_z``, ``Mesh2d_face_z``): give it to D-Flow FM
+    as samples in the field file. A placeholder bed level would outlive a MeshKernel
+    clip in hydrolib and break saving the model, and the D-HYDRO GUI rejects a bed
+    level per cell once it rebuilds the cells (ADR-0003). A mesh with CRS EPSG:28992
+    gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same
+    attributes derived with pyproj; a mesh without CRS gets no CRS variable.
     """
     crs_attributes = _crs_attributes(mesh.crs)
     vertices = mesh.nodes
@@ -152,8 +151,6 @@ def write_ugrid(mesh: Mesh, path: str | os.PathLike[str]) -> None:
                    "projection_x_coordinate", "x-coordinate of mesh nodes")  # fmt: skip
         _float_var(ds, "Mesh2d_node_y", nodes_dim, vertices[:, 1],
                    "projection_y_coordinate", "y-coordinate of mesh nodes")  # fmt: skip
-        _float_var(ds, "Mesh2d_node_z", nodes_dim, MESH_Z_NODATA,
-                   "altitude", "z-coordinate of mesh nodes")  # fmt: skip
 
         fn = ds.createVariable(
             "Mesh2d_face_nodes", "i4", ("Mesh2d_nFaces", "Mesh2d_nMax_face_nodes"),
@@ -184,8 +181,6 @@ def write_ugrid(mesh: Mesh, path: str | os.PathLike[str]) -> None:
         _float_var(ds, "Mesh2d_face_y", faces_dim, face_y,
                    "projection_y_coordinate", "Characteristic y-coordinate of mesh face",
                    bounds="Mesh2d_face_y_bnd")  # fmt: skip
-        _float_var(ds, "Mesh2d_face_z", faces_dim, MESH_Z_NODATA,
-                   "altitude", "z-coordinate of mesh face")  # fmt: skip
 
         bnd_dims = ("Mesh2d_nFaces", "Mesh2d_nMax_face_nodes")
         for axis, data in (("x", face_x_bnd), ("y", face_y_bnd)):
@@ -242,7 +237,7 @@ def _float_var(
     ds: netCDF4.Dataset,
     name: str,
     dims: tuple[str, ...],
-    data: NDArray[np.float64] | float,
+    data: NDArray[np.float64],
     standard_name: str,
     long_name: str,
     bounds: str | None = None,

@@ -55,10 +55,167 @@ with netCDF4.Dataset(workdir / "mesh_net.nc") as ds:
 
 ## Bed levels
 
-`Mesh2d_node_z` and `Mesh2d_face_z` hold -999 (no data), written without a fill value so
-that readers do not mask them. Give the bed level as samples (an xyz file) that D-HYDRO
-interpolates onto the cells: clipping water with MeshKernel can change cells (see
-[Water areas](water-areas.qmd)), so values per cell would not fit.
+The net file has no bed level (no `Mesh2d_node_z` or `Mesh2d_face_z`). Give the bed level
+to D-Flow FM as samples: a file `bodem_2d.xyz` with `x y z` on every cell centre, and two
+`[Initial]` blocks at the top of the field file (after `[General]`), with
+`bedLevType = 1` in the MDU:
+
+```ini
+[Initial]
+quantity            = bedlevel
+dataFile            = bodem_2d.xyz
+dataFileType        = sample
+interpolationMethod = averaging
+operand             = O
+averagingType       = nearestNb
+averagingRelSize    = 3.0
+averagingNumMin     = 1
+extrapolationMethod = 0
+locationType        = 2d
+
+[Initial]
+quantity            = bedlevel
+dataFile            = bodem_2d.xyz
+dataFileType        = sample
+interpolationMethod = averaging
+operand             = O
+averagingType       = nearestNb
+averagingRelSize    = 1.0
+averagingNumMin     = 1
+extrapolationMethod = 0
+locationType        = 2d
+```
+
+The first block fills every cell from the nearest sample in a wide area, also cells
+that have no sample of their own; the second gives each cell the value on its own
+centre. A bed level per cell in the net file does not work in the D-HYDRO GUI: the GUI
+rebuilds the cells from nodes and edges and closes small gaps, after which the list no
+longer fits the cells and the import fails (see
+[ADR-0003](../adr/0003-no-bed-level-in-the-net-file.qmd)). Without samples D-Flow FM uses
+`BedLevUni` everywhere, without a warning.
+
+### With D-HyDAMO
+
+When the mesh is read with `mesh2d_from_netcdf` and the bed level comes from a raster
+(`mesh2d_altitude_from_raster(network, raster, "face", ...)`), hydrolib writes it as
+`mesh2d_face_z`. Turn it into samples around saving the model. Before
+`dimr.save(recurse=True)`:
+
+```python
+import numpy as np
+
+m2d = fm.geometry.netfile.network._mesh2d
+fz = np.asarray(m2d.mesh2d_face_z, dtype=float)
+ok = np.isfinite(fz) & (fz > -999)
+bodem_xyz = np.column_stack([m2d.mesh2d_face_x, m2d.mesh2d_face_y, fz])[ok]
+fm.geometry.bedlevtype = 1
+```
+
+After saving: write the samples, remove `mesh2d_face_z` from the net file (netCDF4
+cannot delete a variable, so the rest is copied), and put the two blocks above at the
+top of the field file:
+
+```python
+import os, re
+import netCDF4
+
+dfm_dir = Path(output_path) / "dflowfm"
+np.savetxt(dfm_dir / "bodem_2d.xyz", bodem_xyz, fmt="%.3f %.3f %.4f")
+
+net = dfm_dir / Path(str(fm.geometry.netfile.filepath)).name
+tmp = net.with_name(net.stem + "_tmp.nc")
+with netCDF4.Dataset(net) as src, netCDF4.Dataset(tmp, "w", format=src.file_format) as dst:
+    for ds in (src, dst):
+        ds.set_auto_maskandscale(False)
+        ds.set_auto_chartostring(False)
+    dst.setncatts(src.__dict__)
+    for name, dim in src.dimensions.items():
+        dst.createDimension(name, None if dim.isunlimited() else len(dim))
+    for name, var in src.variables.items():
+        if name.lower() == "mesh2d_face_z":
+            continue
+        atts = dict(var.__dict__)
+        fill = atts.pop("_FillValue", None)
+        dst.createVariable(name, var.datatype, var.dimensions, fill_value=fill).setncatts(atts)
+        dst[name][...] = var[...]
+os.replace(tmp, net)
+
+block = """[Initial]
+quantity            = bedlevel
+dataFile            = bodem_2d.xyz
+dataFileType        = sample
+interpolationMethod = averaging
+operand             = O
+averagingType       = nearestNb
+averagingRelSize    = {}
+averagingNumMin     = 1
+extrapolationMethod = 0
+locationType        = 2d
+
+"""
+ini = dfm_dir / "fieldFile.ini"
+text = ini.read_text() if ini.exists() else "[General]\nfileVersion = 2.00\nfileType    = iniField\n\n"
+m = re.search(r"^\[(?!general\])", text, re.M | re.I)  # the first block after [General]
+i = m.start() if m else len(text)
+ini.write_text(text[:i] + block.format(3.0) + block.format(1.0) + text[i:])
+
+# hydrolib leaves iniFieldFile out of the MDU when the model had no field file
+mdu = dfm_dir / Path(str(fm.filepath)).name
+t = mdu.read_text()
+if not re.search(r"(?im)^\s*iniFieldFile\s*=\s*[^\s#]", t):
+    t = re.sub(r"(?im)^\s*iniFieldFile\s*=.*\n", "", t)
+    t = re.sub(r"(?im)^(\[geometry\][^\n]*\n)", r"\1iniFieldFile = fieldFile.ini\n", t, count=1)
+    mdu.write_text(t)
+```
+
+Other bed level blocks in the field file come after these two and overwrite them where
+they have values, for example a fixed bed level per polygon.
+
+### Bed level on the nodes
+
+To give the bed level on the nodes instead (`bedLevType` 3 to 6), sample the raster on
+the nodes and write it as `mesh2d_node_z`. The nodes do not change when the GUI rebuilds
+the cells, so a value per node always fits; no sample file is needed. Before
+`dimr.save(recurse=True)`:
+
+```python
+import types
+import numpy as np
+
+# hydrolib fills NaN's (nodes on the edge, partly outside the raster) in place, but
+# pandas 3 returns read-only arrays: let the raster statistics return writable copies
+_stats = mesh.rasterstats.raster_stats_fine_cells
+if not getattr(_stats, "_writable", False):
+    def _writable_stats(*args, **kwargs):
+        df = _stats(*args, **kwargs)
+        return {c: types.SimpleNamespace(values=df[c].to_numpy(copy=True)) for c in df.columns}
+    _writable_stats._writable = True
+    mesh.rasterstats.raster_stats_fine_cells = _writable_stats
+
+network = fm.geometry.netfile.network
+mesh.mesh2d_altitude_from_raster(network, rasterpath, "node", "mean", fill_option="nearest")
+m2d = network._mesh2d
+if len(m2d.mesh2d_face_z) != len(m2d.mesh2d_face_x):  # a stale face_z breaks the save
+    m2d.mesh2d_face_z = np.empty(0)
+fm.geometry.bedlevtype = 3  # 3 mean, 4 minimum, 5 maximum of the node values
+```
+
+After saving, remove `mesh2d_face_z` from the net file as above (the block up to
+`os.replace(tmp, net)`): hydrolib always writes it, and the GUI reads it and fails on its
+rebuilt cells. Leave out the `[Initial] bedlevel` blocks: they would overwrite the nodes.
+Tested with D-Flow FM 2026.02: every cell gets a bed level between the lowest and the
+highest of its node values.
+
+::: {.callout-note title="Net files written by refined-quads 0.1.x"}
+These contain `Mesh2d_node_z` with -999. After a clip with MeshKernel that array keeps
+its old length and saving fails with "shape mismatch". Before saving, empty it:
+`if len(m2d.mesh2d_node_z) != len(m2d.mesh2d_node_x): m2d.mesh2d_node_z = np.empty(0)`.
+:::
+
+::: {.callout-tip title="GeoTIFF fields in the D-HYDRO GUI"}
+The GUI only reads rasters with the extension `.tif` (or `.asc`); with `.tiff` it stops
+at "reading spatial operations". D-Flow FM and DIMR read both.
+:::
 
 ## Read a net file
 

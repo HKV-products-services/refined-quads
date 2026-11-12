@@ -7,6 +7,17 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+### Changed
+
+- `write_ugrid` no longer writes `Mesh2d_node_z` and `Mesh2d_face_z` (-999 for every node
+  and face). After a MeshKernel clip in hydrolib the -999 `mesh2d_node_z` kept its old
+  length and saving the model failed with a shape mismatch; the D-HYDRO GUI rejects a bed
+  level per cell once it rebuilds the cells (ADR-0003). The cells are unchanged.
+- Use the mesh in D-HYDRO: the bed level as samples (`bodem_2d.xyz` with two `[Initial]`
+  blocks), with the steps for a D-HyDAMO model build; tested on the Geul model in D-Flow
+  FM and the D-HYDRO GUI (D-HYDRO Suite 2026.02). Also the bed level on the nodes
+  (`mesh2d_node_z`, `bedLevType` 3 to 6) via D-HyDAMO.
+
 ## [0.1.1] - 2026-11-12
 
 ### Changed

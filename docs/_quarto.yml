@@ -37,6 +37,7 @@ website:
           - adr/index.qmd
           - adr/0001-refine-from-existing-mesh.qmd
           - adr/0002-output-contract-same-cells.qmd
+          - adr/0003-no-bed-level-in-the-net-file.qmd
       - text: "Python API"
         file: reference/index.qmd
     right:

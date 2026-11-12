@@ -16,6 +16,8 @@ from refined_quads import InputError, Mesh, check, read_ugrid, write_ugrid
 WITH_BASE_CELL = [[(-4, 0), (0, 0), (0, 4), (-4, 4)], *CLEAN]
 LEGACY_FILE = MASTERS_DIR.parent / "ugrid" / "domain_with_hole_legacy.nc"
 PROVENANCE = {"source", "history"}  # global attributes that name the writer and the time
+# The old writer wrote -999 bed levels; write_ugrid leaves them out (ADR-0003).
+BED_LEVELS = {"Mesh2d_node_z", "Mesh2d_face_z"}
 
 
 def rd_master(name):
@@ -48,8 +50,10 @@ def test_rd_file_has_the_structure_and_attributes_of_the_old_writer(tmp_path):
         assert {k: len(d) for k, d in old.dimensions.items()} == {
             k: len(d) for k, d in new.dimensions.items()
         }
-        assert list(old.variables) == list(new.variables)
+        assert [v for v in old.variables if v not in BED_LEVELS] == list(new.variables)
         for name, old_var in old.variables.items():
+            if name in BED_LEVELS:
+                continue
             new_var = new.variables[name]
             assert (old_var.dtype, old_var.dimensions) == (new_var.dtype, new_var.dimensions), name
             assert old_var.ncattrs() == new_var.ncattrs(), name
@@ -67,16 +71,14 @@ def test_file_of_the_old_writer_reads_as_its_golden_master():
     assert mesh.crs.to_epsg() == 28992
 
 
-def test_bed_levels_hold_nodata_and_are_not_masked(tmp_path):
+def test_no_bed_level_is_written(tmp_path):
+    # A -999 node_z outlives a MeshKernel clip in hydrolib and breaks saving the model, and
+    # the D-HYDRO GUI rejects a per-cell face_z once it rebuilds the cells (ADR-0003).
     path = tmp_path / "mesh.nc"
     write_ugrid(rd_master("l_shaped_domain"), path)
 
     with netCDF4.Dataset(path) as ds:
-        for name in ("Mesh2d_node_z", "Mesh2d_face_z"):
-            values = ds[name][:]
-            assert not np.ma.is_masked(values), name
-            assert (np.asarray(values) == -999.0).all(), name
-            assert "_FillValue" not in ds[name].ncattrs(), name
+        assert not [v for v in ds.variables if v.lower().endswith("_z")]
 
 
 def test_only_the_2d_mesh_of_a_net_file_with_a_1d_network_is_read(tmp_path):
