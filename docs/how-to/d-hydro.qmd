@@ -14,7 +14,7 @@ from shapely import Point, box
 from refined_quads import generate
 
 workdir = Path(tempfile.mkdtemp())
-mesh = generate(
+quad_mesh = generate(
     box(155_000, 463_000, 155_320, 463_240),
     cell_size=32.0,
     refinement_areas=[(Point(155_160, 463_120).buffer(40), 1)],
@@ -23,13 +23,20 @@ mesh = generate(
 )
 ```
 
+::: {.callout-warning title="Do not call it `mesh` next to D-HyDAMO"}
+D-HyDAMO scripts usually import `from hydrolib.dhydamo.geometry import mesh` (the module
+with `mesh2d_clip`, `links1d2d_add_links_1d_to_2d` and so on). `mesh = generate(...)`
+replaces that module, and the next `mesh.<function>(...)` fails with an
+`AttributeError`. Use another name, such as `quad_mesh` in the examples here.
+:::
+
 ## Write a net file
 
 ```{python}
 #| output: false
 from refined_quads import write_ugrid
 
-write_ugrid(mesh, workdir / "mesh_net.nc")
+write_ugrid(quad_mesh, workdir / "mesh_net.nc")
 ```
 
 The file is UGRID-1.0 with the structure of the D-HYDRO mesh generator export: the
@@ -62,8 +69,8 @@ mesh from any program:
 ```{python}
 from refined_quads import check, read_ugrid
 
-mesh = read_ugrid(workdir / "mesh_net.nc")
-print(check(mesh).summary())
+quad_mesh = read_ugrid(workdir / "mesh_net.nc")
+print(check(quad_mesh).summary())
 ```
 
 ## If the orthogonality repair does not close

@@ -41,14 +41,14 @@ refinement_areas = [
 ```{python}
 from refined_quads import generate
 
-mesh = generate(
+quad_mesh = generate(
     domain,
     cell_size=32.0,
     refinement_areas=refinement_areas,
     transition_rows=[1, 1],
     crs="EPSG:28992",
 )
-print(mesh)
+print(quad_mesh)
 ```
 
 `transition_rows` gives, per step from coarse to fine, how many rows of finer cells
@@ -60,7 +60,7 @@ The mesh, coloured by refinement level, with the refinement areas in red:
 ```{python}
 #| echo: false
 #| output: asis
-print(svg(mesh, areas=[g for g, _ in refinement_areas]))
+print(svg(quad_mesh, areas=[g for g, _ in refinement_areas]))
 ```
 
 Where levels meet, a lattice square is split into **transition cells**: triangles that
@@ -73,7 +73,7 @@ connect the finer cells on one side to the coarser square, without hanging nodes
 ```{python}
 from refined_quads import check
 
-report = check(mesh)
+report = check(quad_mesh)
 print(report.summary())
 ```
 
@@ -82,7 +82,7 @@ print(report.summary())
 ```{python}
 from refined_quads import read_ugrid, write_ugrid
 
-write_ugrid(mesh, workdir / "mesh_net.nc")
+write_ugrid(quad_mesh, workdir / "mesh_net.nc")
 print(read_ugrid(workdir / "mesh_net.nc"))
 ```
 

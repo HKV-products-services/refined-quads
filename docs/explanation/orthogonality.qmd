@@ -26,14 +26,14 @@ from shapely import Point, box
 
 from refined_quads import check, generate
 
-mesh = generate(
+quad_mesh = generate(
     box(155_000, 463_000, 155_320, 463_240),
     cell_size=32.0,
     refinement_areas=[(Point(155_160, 463_120).buffer(40), 2)],
     transition_rows=[1, 1],
     crs="EPSG:28992",
 )
-report = check(mesh)
+report = check(quad_mesh)
 print(f"{report.orthogonality.size} internal edges, worst orth_e = {report.max_orthogonality:.3f}")
 ```
 

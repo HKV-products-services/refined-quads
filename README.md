@@ -9,16 +9,22 @@ from shapely import Point, box
 
 from refined_quads import check, generate, write_ugrid
 
-mesh = generate(
+quad_mesh = generate(
     box(155_000, 463_000, 155_640, 463_480),
     cell_size=32.0,
     refinement_areas=[(Point(155_250, 463_240).buffer(70), 3)],
     transition_rows=[1, 1, 1],
     crs="EPSG:28992",
 )
-print(check(mesh).summary())
-write_ugrid(mesh, "mesh_net.nc")
+print(check(quad_mesh).summary())
+write_ugrid(quad_mesh, "mesh_net.nc")
 ```
+
+> **Warning:** do not call the result `mesh` in a D-HyDAMO script. Those scripts usually import
+> `from hydrolib.dhydamo.geometry import mesh` (the module with `mesh2d_clip`,
+> `links1d2d_add_links_1d_to_2d` and so on); `mesh = generate(...)` replaces that module,
+> and the next `mesh.<function>(...)` fails with an `AttributeError`. That is why the
+> examples use `quad_mesh`.
 
 The package also refines an existing mesh (also one made by another program), checks a
 mesh for what D-Flow FM needs, reads its input from GIS layers and runs from a TOML file

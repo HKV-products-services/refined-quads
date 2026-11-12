@@ -21,7 +21,7 @@ from shapely import Point, box
 
 from refined_quads import generate
 
-mesh = generate(
+quad_mesh = generate(
     box(155_000, 463_000, 155_640, 463_480),
     cell_size=32.0,
     refinement_areas=[(Point(155_250, 463_240).buffer(70), 3)],
@@ -33,8 +33,15 @@ mesh = generate(
 ```{python}
 #| echo: false
 #| output: asis
-print(svg(mesh, areas=[Point(155_250, 463_240).buffer(70)]))
+print(svg(quad_mesh, areas=[Point(155_250, 463_240).buffer(70)]))
 ```
+
+::: {.callout-warning title="Do not call it `mesh` next to D-HyDAMO"}
+D-HyDAMO scripts usually import `from hydrolib.dhydamo.geometry import mesh` (the module
+with `mesh2d_clip`, `links1d2d_add_links_1d_to_2d` and so on). `mesh = generate(...)`
+replaces that module, and the next `mesh.<function>(...)` fails with an
+`AttributeError`. That is why the examples use `quad_mesh`.
+:::
 
 ::: {.callout-warning title="Pre-alpha"}
 The package is under construction. The API described here is not stable yet.

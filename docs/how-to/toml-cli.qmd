@@ -114,6 +114,6 @@ main(["info", str(workdir / "mesh_net.nc")])
 from refined_quads import MeshSpec
 
 spec = MeshSpec.from_toml(workdir / "run.toml")
-mesh = spec.replace(cell_size=25.0).generate()
-print(mesh)
+quad_mesh = spec.replace(cell_size=25.0).generate()
+print(quad_mesh)
 ```

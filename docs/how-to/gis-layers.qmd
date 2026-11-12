@@ -70,20 +70,20 @@ domain = read_domain(gpkg, "modelgebied")
 areas = read_refinement_areas(gpkg, "verfijning", level="refinement")
 water = read_water_areas(gpkg, "water")
 
-mesh = generate(
+quad_mesh = generate(
     domain,
     cell_size=32.0,
     refinement_areas=areas,
     transition_rows=1,
     water_areas=water,
 )
-print(mesh)
+print(quad_mesh)
 ```
 
 ```{python}
 #| echo: false
 #| output: asis
-print(svg(mesh, areas=list(areas.geometries), water=list(water.geometries)))
+print(svg(quad_mesh, areas=list(areas.geometries), water=list(water.geometries)))
 ```
 
 ## Rules

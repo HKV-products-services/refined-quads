@@ -45,14 +45,14 @@ finer area before the mesh coarsens:
 area = box(155_100, 463_100, 155_140, 463_140)
 panels = []
 for rows in ([1, 1], [2, 2]):
-    mesh = generate(
+    quad_mesh = generate(
         box(155_000, 463_000, 155_256, 463_256),
         cell_size=32.0,
         refinement_areas=[(area, 2)],
         transition_rows=rows,
         crs="EPSG:28992",
     )
-    panels.append((mesh, {"areas": [area], "title": f"transition_rows={rows}"}))
+    panels.append((quad_mesh, {"areas": [area], "title": f"transition_rows={rows}"}))
 print(svg_row(panels))
 ```
 

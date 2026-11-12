@@ -7,6 +7,12 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+### Changed
+
+- The examples in the README and the documentation call the result `quad_mesh` instead
+  of `mesh`, with a warning: in a D-HyDAMO script `mesh = generate(...)` replaces the
+  module `hydrolib.dhydamo.geometry.mesh`.
+
 ## [0.1.0] - 2026-11-12
 
 ### Added
