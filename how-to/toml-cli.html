@@ -274,9 +274,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="generate-on-the-command-line" class="level2">
 <h2 class="anchored" data-anchor-id="generate-on-the-command-line">Generate on the command line</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">refined-quads</span> generate run.toml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div id="67a1dc76" class="cell" data-execution_count="3">
+<div id="eac025b1" class="cell" data-execution_count="3">
 <div class="cell-output cell-output-stdout">
-<pre><code>wrote /tmp/tmpwdr5tmt6/mesh_net.nc
+<pre><code>wrote /tmp/tmp_cn7k88e/mesh_net.nc
 lattice: origin (154976, 462976), base cell 32, 2 levels, unit 8
 nodes: 807, cells: 857
 cells per level: 0 (32): 341, 1 (16): 148, 2 (8): 368
@@ -301,9 +301,9 @@ valid: yes</code></pre>
 <h2 class="anchored" data-anchor-id="look-at-a-mesh">Look at a mesh</h2>
 <p><code>refined-quads info</code> shows the lattice, the cells per refinement level and the checks of any UGRID file, also a D-HYDRO net file with a 1D network:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">refined-quads</span> info mesh_net.nc</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div id="0fc19923" class="cell" data-execution_count="4">
+<div id="f4a0d4e8" class="cell" data-execution_count="4">
 <div class="cell-output cell-output-stdout">
-<pre><code>/tmp/tmpwdr5tmt6/mesh_net.nc
+<pre><code>/tmp/tmp_cn7k88e/mesh_net.nc
 crs: EPSG:28992
 lattice: origin (154976, 462976), base cell 32, 2 levels, unit 8
 nodes: 807, cells: 857
@@ -325,7 +325,7 @@ valid: yes</code></pre>
 </section>
 <section id="the-same-in-python" class="level2">
 <h2 class="anchored" data-anchor-id="the-same-in-python">The same in Python</h2>
-<div id="6d22acce" class="cell" data-execution_count="5">
+<div id="317e3067" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> MeshSpec</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>spec <span class="op">=</span> MeshSpec.from_toml(workdir <span class="op">/</span> <span class="st">"run.toml"</span>)</span>
