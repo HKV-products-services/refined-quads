@@ -95,6 +95,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   runs during the build and draws the mesh figures, and quartodoc writes the API
   reference. CI publishes it to GitHub Pages from main once the repository is public.
 - Licence: GNU GPL v3 or later (`LICENSE`), with `CITATION.cff`.
+- pre-commit hooks (file hygiene, yamllint, pydoclint, ruff), also run in CI.
+- Publishing to PyPI when a GitHub release is published (trusted publishing).
 
 ### Changed compared with the generator at qgis_dhydamo `9a324bc`
 
