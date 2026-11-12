@@ -18,7 +18,10 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 - Invalid input raises an error; never silently adjust (levels, transition rows, CRS).
   Exception: invalid polygons (domain, refinement areas, water areas) are made valid
   with `make_valid` and a logged warning, not an error.
-- Public API only via the top-level package; internal modules start with an underscore.
+- Public API only via the top-level package. Internal code lives in subpackages whose
+  name starts with an underscore, grouped by task: `_generate/`, `_refine/`, `_check/`,
+  `_io/`, `_common/` (the modules inside have plain names). The test folders mirror them
+  (`tests/generate/`, ...); tests of the public layer (`cli`, `mesh`) stay in `tests/`.
 - Use the terms from `CONTEXT.md`.
 
 ## Commands

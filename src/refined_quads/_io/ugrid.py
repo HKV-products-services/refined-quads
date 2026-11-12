@@ -11,8 +11,8 @@ import numpy as np
 from numpy.typing import NDArray
 from pyproj import CRS
 
-from refined_quads._gis import crs_cf_attributes
-from refined_quads._recognise import derive_lattice
+from refined_quads._common.recognise import derive_lattice
+from refined_quads._io.gis import crs_cf_attributes
 from refined_quads.errors import InputError
 from refined_quads.mesh import Mesh
 

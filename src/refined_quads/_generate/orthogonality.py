@@ -22,14 +22,14 @@ from typing import NamedTuple
 import numpy as np
 from numpy.typing import NDArray
 
-from refined_quads._faces import Nodes, square_cells
-from refined_quads._topology import Edges, directed_edges, unique_edges
+from refined_quads._common.topology import Edges, directed_edges, unique_edges
+from refined_quads._generate.faces import Nodes, square_cells
 from refined_quads.errors import OrthogonalityRepairError
 
 #: Highest FM orthogonality D-Flow FM accepts on an internal edge.
 MAX_FM_ORTHOGONALITY = 0.30
 
-_log = logging.getLogger("refined_quads._engine")
+_log = logging.getLogger("refined_quads._generate.engine")
 
 BadEdge = tuple[int, int, int, int]
 

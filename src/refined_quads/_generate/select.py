@@ -11,8 +11,8 @@ from numpy.typing import NDArray
 from shapely import STRtree
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._areas import make_valid
-from refined_quads._grid import Grid, Leaf
+from refined_quads._common.grid import Grid, Leaf
+from refined_quads._generate.areas import make_valid
 
 
 @dataclass(frozen=True)

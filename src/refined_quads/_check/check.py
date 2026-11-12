@@ -7,10 +7,10 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
-from refined_quads._balance import balance_violations
-from refined_quads._orthogonality import MAX_FM_ORTHOGONALITY, edge_orthogonality
-from refined_quads._recognise import lattice_squares, twice_signed_areas
-from refined_quads._topology import hanging_nodes, unique_edges
+from refined_quads._common.recognise import lattice_squares, twice_signed_areas
+from refined_quads._common.topology import hanging_nodes, unique_edges
+from refined_quads._generate.balance import balance_violations
+from refined_quads._generate.orthogonality import MAX_FM_ORTHOGONALITY, edge_orthogonality
 from refined_quads.mesh import Lattice, Mesh
 
 

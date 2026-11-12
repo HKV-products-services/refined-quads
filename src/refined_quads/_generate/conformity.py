@@ -7,11 +7,11 @@ from collections import defaultdict
 
 import numpy as np
 
-from refined_quads._faces import Nodes, square_cells
-from refined_quads._grid import Key
-from refined_quads._progress import Reporter
+from refined_quads._common.grid import Key
+from refined_quads._common.progress import Reporter
+from refined_quads._generate.faces import Nodes, square_cells
 
-_log = logging.getLogger("refined_quads._engine")
+_log = logging.getLogger("refined_quads._generate.engine")
 
 
 def head_to_toe(cells: list[list[int]], nodes: Nodes, report: Reporter) -> int:

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import deque
 
-from refined_quads._balance import finer_exists
-from refined_quads._grid import Key, Leaf, neighbours
-from refined_quads._progress import Reporter
+from refined_quads._common.grid import Key, Leaf, neighbours
+from refined_quads._common.progress import Reporter
+from refined_quads._generate.balance import finer_exists
 
 _OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
 

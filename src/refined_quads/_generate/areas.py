@@ -13,9 +13,9 @@ from numpy.typing import NDArray
 from shapely import STRtree
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._progress import Reporter
+from refined_quads._common.progress import Reporter
 
-_log = logging.getLogger("refined_quads._engine")
+_log = logging.getLogger("refined_quads._generate.engine")
 
 #: A refinement area: its level, the prepared polygon and the prepared transition zones
 #: with the level of the step they belong to, coarsest (largest) zone first.

@@ -34,17 +34,21 @@ import shapely
 from numpy.typing import NDArray
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._areas import Candidates, make_valid, prepare_refinement_areas
-from refined_quads._balance import balance_2_to_1, eliminate_t_junctions
-from refined_quads._clip import clip_cells
-from refined_quads._conformity import count_hanging_nodes, head_to_toe, resolve_hanging_nodes
-from refined_quads._faces import Nodes, emit_cells, split_sides
-from refined_quads._grid import Grid, Key, Leaf, make_grid
-from refined_quads._orthogonality import repair_orthogonality
-from refined_quads._progress import Callback as Progress
-from refined_quads._progress import Reporter
-from refined_quads._quadtree import Queued, base_cells, build_quadtree, existing_cells
-from refined_quads._select import WaterAreas, prepare_water, select_leaves
+from refined_quads._common.grid import Grid, Key, Leaf, make_grid
+from refined_quads._common.progress import Callback as Progress
+from refined_quads._common.progress import Reporter
+from refined_quads._generate.areas import Candidates, make_valid, prepare_refinement_areas
+from refined_quads._generate.balance import balance_2_to_1, eliminate_t_junctions
+from refined_quads._generate.clip import clip_cells
+from refined_quads._generate.conformity import (
+    count_hanging_nodes,
+    head_to_toe,
+    resolve_hanging_nodes,
+)
+from refined_quads._generate.faces import Nodes, emit_cells, split_sides
+from refined_quads._generate.orthogonality import repair_orthogonality
+from refined_quads._generate.quadtree import Queued, base_cells, build_quadtree, existing_cells
+from refined_quads._generate.select import WaterAreas, prepare_water, select_leaves
 from refined_quads.errors import InputError, OrthogonalityRepairError
 
 _log = logging.getLogger(__name__)

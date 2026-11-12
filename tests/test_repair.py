@@ -12,8 +12,8 @@ import pytest
 from golden.record import REPAIR_DIR
 from golden.repair_cases import CASES
 from refined_quads import Lattice
-from refined_quads._faces import Nodes
-from refined_quads._orthogonality import repair_orthogonality
+from refined_quads._generate.faces import Nodes
+from refined_quads._generate.orthogonality import repair_orthogonality
 
 
 def canonical(cells, points):

@@ -10,9 +10,16 @@ from numpy.typing import NDArray
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._balance import balance_violations
-from refined_quads._engine import WATER_REMOVAL_RULES, Existing, RawRepairError, refine_cells
-from refined_quads._generate import (
+from refined_quads._common.grid import Key, Leaf
+from refined_quads._common.recognise import lattice_squares
+from refined_quads._generate.balance import balance_violations
+from refined_quads._generate.engine import (
+    WATER_REMOVAL_RULES,
+    Existing,
+    RawRepairError,
+    refine_cells,
+)
+from refined_quads._generate.generate import (
     WaterRemovalRule,
     _check_polygonal,
     _in_mesh_crs,
@@ -25,9 +32,7 @@ from refined_quads._generate import (
     domain_holes,
     domain_shells,
 )
-from refined_quads._gis import Areas, frame_areas, is_frame
-from refined_quads._grid import Key, Leaf
-from refined_quads._recognise import lattice_squares
+from refined_quads._io.gis import Areas, frame_areas, is_frame
 from refined_quads.errors import InputError, MeshRecognitionError, OrthogonalityRepairError
 from refined_quads.mesh import Lattice, Mesh, RefineResult, ReplacementMap
 

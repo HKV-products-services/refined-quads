@@ -6,9 +6,9 @@ import numpy as np
 import shapely
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._areas import Candidates, required_levels
-from refined_quads._grid import Grid, Leaf
-from refined_quads._progress import Reporter
+from refined_quads._common.grid import Grid, Leaf
+from refined_quads._common.progress import Reporter
+from refined_quads._generate.areas import Candidates, required_levels
 
 #: A queued cell: key, its level, the level fixed by an ancestor and its candidates.
 Queued = tuple[int, int, int, int, int, int, tuple[int, ...]]

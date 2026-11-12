@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 from refined_quads.errors import Cancelled
 
-_log = logging.getLogger("refined_quads._engine")
+_log = logging.getLogger("refined_quads._generate.engine")
 
 #: Engine callback: ``(percent or None, message)``; a truthy result cancels the run.
 Callback = Callable[[int | None, str], object]

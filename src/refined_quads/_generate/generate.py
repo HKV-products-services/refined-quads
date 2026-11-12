@@ -13,8 +13,8 @@ from numpy.typing import NDArray
 from pyproj import CRS
 from shapely.geometry.base import BaseGeometry
 
-from refined_quads._engine import WATER_REMOVAL_RULES, RawRepairError, generate_cells
-from refined_quads._gis import Areas, frame_areas, is_frame
+from refined_quads._generate.engine import WATER_REMOVAL_RULES, RawRepairError, generate_cells
+from refined_quads._io.gis import Areas, frame_areas, is_frame
 from refined_quads.errors import InputError, OrthogonalityRepairError
 from refined_quads.mesh import Lattice, Mesh, projected_crs
 

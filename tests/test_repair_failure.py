@@ -11,7 +11,7 @@ import pyogrio
 import pytest
 from shapely import Point, box
 
-import refined_quads._engine as engine
+import refined_quads._generate.engine as engine
 from golden.compare import assert_same_cells
 from handmade import generate_rd, write_layer
 from refined_quads import Mesh, OrthogonalityRepairError, read_ugrid

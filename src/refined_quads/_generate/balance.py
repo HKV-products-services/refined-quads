@@ -8,12 +8,12 @@ from collections import deque
 import numpy as np
 from numpy.typing import NDArray
 
-from refined_quads._grid import Key, neighbours, split
-from refined_quads._progress import Reporter
-from refined_quads._recognise import LatticeSquares
-from refined_quads._topology import PointLookup
+from refined_quads._common.grid import Key, neighbours, split
+from refined_quads._common.progress import Reporter
+from refined_quads._common.recognise import LatticeSquares
+from refined_quads._common.topology import PointLookup
 
-_log = logging.getLogger("refined_quads._engine")
+_log = logging.getLogger("refined_quads._generate.engine")
 
 
 def find_ancestor(
