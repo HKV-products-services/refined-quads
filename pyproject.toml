@@ -96,6 +96,9 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+# The test folders mirror the subpackages of src/; the shared helpers (`golden`, `handmade`)
+# are imported from the tests root.
+pythonpath = ["tests"]
 # The fast suite skips slow, benchmark and realdata tests; pass `-m <marker>` to run them.
 addopts = [
     "-ra",
