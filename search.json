@@ -1,0 +1,961 @@
+[
+  {
+    "objectID": "tutorial/first-mesh.html",
+    "href": "tutorial/first-mesh.html",
+    "title": "Your first mesh",
+    "section": "",
+    "text": "This tutorial generates a small refined quad mesh from shapely geometries, looks at it, checks it and writes it as a UGRID net file."
+  },
+  {
+    "objectID": "tutorial/first-mesh.html#the-input",
+    "href": "tutorial/first-mesh.html#the-input",
+    "title": "Your first mesh",
+    "section": "The input",
+    "text": "The input\nA mesh needs a domain, the area it covers, and a base cell, the size of its coarsest squares. Refinement areas say where the mesh must be finer: each is a polygon paired with a refinement level, the number of times the base cell is halved there. Coordinates are in RD New (EPSG:28992).\n\nfrom shapely import Point, box\n\ndomain = box(155_000, 463_000, 155_640, 463_480)\nrefinement_areas = [\n    (Point(155_250, 463_240).buffer(60), 2),  # 32 m / 2**2 = 8 m cells\n    (box(155_450, 463_080, 155_600, 463_160), 1),  # 16 m cells\n]"
+  },
+  {
+    "objectID": "tutorial/first-mesh.html#generate",
+    "href": "tutorial/first-mesh.html#generate",
+    "title": "Your first mesh",
+    "section": "Generate",
+    "text": "Generate\n\nfrom refined_quads import generate\n\nmesh = generate(\n    domain,\n    cell_size=32.0,\n    refinement_areas=refinement_areas,\n    transition_rows=[1, 1],\n    crs=\"EPSG:28992\",\n)\nprint(mesh)\n\nMesh(nodes=844, faces=916, cell_size=32, levels=2, crs=EPSG:28992)\n\n\ntransition_rows gives, per step from coarse to fine, how many rows of finer cells surround a finer area before the mesh coarsens. Here one row for the step from 32 m to 16 m and one for 16 m to 8 m.\nThe mesh, coloured by refinement level, with the refinement areas in red:\n\n \n  \n   \n    \n    2026-11-12T10:29:33.060553\n    image/svg+xml\n    \n     \n      Matplotlib v3.11.2, https://matplotlib.org/\n     \n    \n   \n  \n \n \n  \n \n \n  \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n  \n \n \n  \n   \n  \n \n\n\nWhere levels meet, a lattice square is split into transition cells: triangles that connect the finer cells on one side to the coarser square, without hanging nodes."
+  },
+  {
+    "objectID": "tutorial/first-mesh.html#check",
+    "href": "tutorial/first-mesh.html#check",
+    "title": "Your first mesh",
+    "section": "Check",
+    "text": "Check\ncheck reports everything D-Flow FM and refining rely on:\n\nfrom refined_quads import check\n\nreport = check(mesh)\nprint(report.summary())\n\nlattice: origin (154976, 462976), base cell 32, 2 levels, unit 8\nnodes: 844, cells: 916\ncells per level: 0 (32): 356, 1 (16): 256, 2 (8): 304\nnodes off the lattice: 0\nduplicate nodes (information): 0\nsplit edges: 0\nhanging nodes: 0\n2:1 balance violations: 0\nnon-orthogonal edges (&gt; 0.30): 0 (worst 0.000)\nclockwise cells: 0\nunrecognised cells: 0\nvalid: yes"
+  },
+  {
+    "objectID": "tutorial/first-mesh.html#write-it-for-d-hydro",
+    "href": "tutorial/first-mesh.html#write-it-for-d-hydro",
+    "title": "Your first mesh",
+    "section": "Write it for D-HYDRO",
+    "text": "Write it for D-HYDRO\n\nfrom refined_quads import read_ugrid, write_ugrid\n\nwrite_ugrid(mesh, workdir / \"mesh_net.nc\")\nprint(read_ugrid(workdir / \"mesh_net.nc\"))\n\nMesh(nodes=844, faces=916, cell_size=32, levels=2, crs=EPSG:28992)\n\n\nThe file has the structure of the D-HYDRO mesh export, with the RD New attributes the D-Flow FM plugin writes; see Use the mesh in D-HYDRO."
+  },
+  {
+    "objectID": "tutorial/first-mesh.html#next",
+    "href": "tutorial/first-mesh.html#next",
+    "title": "Your first mesh",
+    "section": "Next",
+    "text": "Next\n\nRead the input from GIS layers: Read layers from a GeoPackage.\nLeave out the water: Water areas.\nRun the same thing from a file: Run from a TOML file."
+  },
+  {
+    "objectID": "reference/refine.html",
+    "href": "reference/refine.html",
+    "title": "refine",
+    "section": "",
+    "text": "refine(\n    mesh,\n    refinement_areas,\n    *,\n    transition_rows=1,\n    domain=None,\n    water_areas=(),\n    water_removal='centre',\n    crs=None,\n    progress=None,\n)\nRefine an existing mesh locally with new refinement areas.\nThe lattice and the lattice squares are recognised from the cells of the mesh (transition cells as parts of their square), the new areas are applied, the 2:1 balance is restored where needed and the transitions around the changed squares are rebuilt. Squares that do not change keep their cells exactly, nodes included.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe existing mesh, for example from :func:read_ugrid.\nrequired\n\n\nrefinement_areas\niterable of (shapely geometry, int), or Areas\nThe new refinement areas with their level (1 or higher, relative to the base cell of the mesh).\nrequired\n\n\ntransition_rows\nint or sequence of int\nTransition rows per level step from coarse to fine, as for :func:generate: one value per step up to the highest level of the result (that of the mesh or of the new areas, whichever is higher), or one value for every step; each at least 1. Only the steps the new areas need are used.\n1\n\n\ndomain\nshapely geometry or Areas\nNew cells outside it are removed; its holes act as water areas. It never adds cells: refining stays within the footprint of the mesh.\nNone\n\n\nwater_areas\niterable of shapely geometry, or Areas\nNew cells are removed by the water removal rule; existing cells stay.\n()\n\n\nwater_removal\n('centre', 'inside', 'touches')\nWater removal rule.\n\"centre\"\n\n\ncrs\npyproj.CRS or str or int\nCRS of input without CRS (shapely geometries) when the mesh has a CRS; input with its own CRS is transformed to the CRS of the mesh.\nNone\n\n\nprogress\ncallable\nAs for :func:generate.\nNone\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineResult\nThe new mesh (lattice levels raised if the new areas are finer) and the replacement map.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshRecognitionError\nIf the mesh is not a refined quad mesh: nodes off its lattice, cells that fill no lattice square, or a broken 2:1 balance; it carries the locations. Duplicate nodes are accepted: cells that do not change keep theirs.\n\n\n\nInputError\nFor invalid areas, transition rows, CRS or water removal rule (as :func:generate).\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair cannot close; it carries the raw mesh.\n\n\n\nCancelled\nIf the progress callback returned True."
+  },
+  {
+    "objectID": "reference/refine.html#parameters",
+    "href": "reference/refine.html#parameters",
+    "title": "refine",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe existing mesh, for example from :func:read_ugrid.\nrequired\n\n\nrefinement_areas\niterable of (shapely geometry, int), or Areas\nThe new refinement areas with their level (1 or higher, relative to the base cell of the mesh).\nrequired\n\n\ntransition_rows\nint or sequence of int\nTransition rows per level step from coarse to fine, as for :func:generate: one value per step up to the highest level of the result (that of the mesh or of the new areas, whichever is higher), or one value for every step; each at least 1. Only the steps the new areas need are used.\n1\n\n\ndomain\nshapely geometry or Areas\nNew cells outside it are removed; its holes act as water areas. It never adds cells: refining stays within the footprint of the mesh.\nNone\n\n\nwater_areas\niterable of shapely geometry, or Areas\nNew cells are removed by the water removal rule; existing cells stay.\n()\n\n\nwater_removal\n('centre', 'inside', 'touches')\nWater removal rule.\n\"centre\"\n\n\ncrs\npyproj.CRS or str or int\nCRS of input without CRS (shapely geometries) when the mesh has a CRS; input with its own CRS is transformed to the CRS of the mesh.\nNone\n\n\nprogress\ncallable\nAs for :func:generate.\nNone"
+  },
+  {
+    "objectID": "reference/refine.html#returns",
+    "href": "reference/refine.html#returns",
+    "title": "refine",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nRefineResult\nThe new mesh (lattice levels raised if the new areas are finer) and the replacement map."
+  },
+  {
+    "objectID": "reference/refine.html#raises",
+    "href": "reference/refine.html#raises",
+    "title": "refine",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nMeshRecognitionError\nIf the mesh is not a refined quad mesh: nodes off its lattice, cells that fill no lattice square, or a broken 2:1 balance; it carries the locations. Duplicate nodes are accepted: cells that do not change keep theirs.\n\n\n\nInputError\nFor invalid areas, transition rows, CRS or water removal rule (as :func:generate).\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair cannot close; it carries the raw mesh.\n\n\n\nCancelled\nIf the progress callback returned True."
+  },
+  {
+    "objectID": "reference/read_ugrid.html",
+    "href": "reference/read_ugrid.html",
+    "title": "read_ugrid",
+    "section": "",
+    "text": "read_ugrid(path)\nRead the 2D mesh of a UGRID netCDF file.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\npath\nstr or path - like\nA UGRID file, such as a D-HYDRO net file; a 1D network or other variables in it are ignored.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMesh\nThe 2D mesh with its nodes and faces as stored (node order and orientation unchanged), the CRS of the file if it has one, and the lattice derived from the cells.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the file has no 2D mesh topology or more than one, or the mesh is not a refined quad mesh (its nodes do not lie on one lattice)."
+  },
+  {
+    "objectID": "reference/read_ugrid.html#parameters",
+    "href": "reference/read_ugrid.html#parameters",
+    "title": "read_ugrid",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\npath\nstr or path - like\nA UGRID file, such as a D-HYDRO net file; a 1D network or other variables in it are ignored.\nrequired"
+  },
+  {
+    "objectID": "reference/read_ugrid.html#returns",
+    "href": "reference/read_ugrid.html#returns",
+    "title": "read_ugrid",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nMesh\nThe 2D mesh with its nodes and faces as stored (node order and orientation unchanged), the CRS of the file if it has one, and the lattice derived from the cells."
+  },
+  {
+    "objectID": "reference/read_ugrid.html#raises",
+    "href": "reference/read_ugrid.html#raises",
+    "title": "read_ugrid",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nIf the file has no 2D mesh topology or more than one, or the mesh is not a refined quad mesh (its nodes do not lie on one lattice)."
+  },
+  {
+    "objectID": "reference/read_domain.html",
+    "href": "reference/read_domain.html",
+    "title": "read_domain",
+    "section": "",
+    "text": "read_domain(source, layer=None, *, crs=None)\nRead the domain from a GIS layer; its polygons are merged into one.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nsource\n(str, path - like or GeoDataFrame)\nA GeoPackage or shapefile, or an object with geometry and crs attributes such as a GeoDataFrame (geopandas itself is not needed).\nrequired\n\n\nlayer\nstr\nLayer name; required when the file has more than one layer.\nNone\n\n\ncrs\npyproj.CRS or str or int\nCRS of a layer that has none. A layer without CRS raises an error unless it is given; a layer with a different CRS raises an error too.\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nAreas\nOne (multi)polygon with the CRS of the layer.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the file or layer cannot be read, the layer has no CRS and none is given, a feature has no geometry or is not a polygon, or the layer is empty."
+  },
+  {
+    "objectID": "reference/read_domain.html#parameters",
+    "href": "reference/read_domain.html#parameters",
+    "title": "read_domain",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nsource\n(str, path - like or GeoDataFrame)\nA GeoPackage or shapefile, or an object with geometry and crs attributes such as a GeoDataFrame (geopandas itself is not needed).\nrequired\n\n\nlayer\nstr\nLayer name; required when the file has more than one layer.\nNone\n\n\ncrs\npyproj.CRS or str or int\nCRS of a layer that has none. A layer without CRS raises an error unless it is given; a layer with a different CRS raises an error too.\nNone"
+  },
+  {
+    "objectID": "reference/read_domain.html#returns",
+    "href": "reference/read_domain.html#returns",
+    "title": "read_domain",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nAreas\nOne (multi)polygon with the CRS of the layer."
+  },
+  {
+    "objectID": "reference/read_domain.html#raises",
+    "href": "reference/read_domain.html#raises",
+    "title": "read_domain",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nIf the file or layer cannot be read, the layer has no CRS and none is given, a feature has no geometry or is not a polygon, or the layer is empty."
+  },
+  {
+    "objectID": "reference/index.html",
+    "href": "reference/index.html",
+    "title": "API reference",
+    "section": "",
+    "text": "Everything public is available from the top-level package refined_quads.\n\n\n\ngenerate\nGenerate a refined quad mesh over a domain.\n\n\nrefine\nRefine an existing mesh locally with new refinement areas.\n\n\ncheck\nCheck a mesh for hanging nodes, 2:1 balance, FM orthogonality and orientation.\n\n\nMeshReport\nResult of :func:check.\n\n\n\n\n\n\n\n\n\nMesh\nAn immutable refined quad mesh.\n\n\nLattice\nThe fixed grid of points on which every square of a refined quad mesh has its corners.\n\n\nRefineResult\nThe result of :func:refine.\n\n\nReplacementMap\nWhat a refine did to the cells of the existing mesh.\n\n\n\n\n\n\n\n\n\nread_domain\nRead the domain from a GIS layer; its polygons are merged into one.\n\n\nread_refinement_areas\nRead refinement areas from a GIS layer.\n\n\nread_water_areas\nRead water areas from a GIS layer.\n\n\nAreas\nPolygons with their coordinate reference system.\n\n\n\n\n\n\n\n\n\nread_ugrid\nRead the 2D mesh of a UGRID netCDF file.\n\n\nwrite_ugrid\nWrite a mesh as a UGRID-1.0 netCDF file that D-HYDRO and D-Flow FM read.\n\n\n\n\n\n\n\n\n\nMeshSpec\nEverything refined-quads generate needs; one-to-one with the TOML file.\n\n\nRefineSpec\nEverything refined-quads refine needs besides the mesh; one-to-one with the TOML.\n\n\nLayerSource\nA layer of a GeoPackage or shapefile.\n\n\nRefinementSource\nA layer with refinement areas.\n\n\n\n\n\n\n\n\n\nInputError\nInvalid input: the package raises this instead of silently adjusting the input.\n\n\nCancelled\nThe run was cancelled through the progress callback.\n\n\nMeshRecognitionError\nAn existing mesh is not a refined quad mesh this package can refine.\n\n\nOrthogonalityRepairError\nThe orthogonality repair could not make every internal edge FM-orthogonal.\n\n\n\n\n\n\nExit codes 0 success, 1 the run failed, 2 invalid input or arguments.\n\n\n\nmain\nRun the command-line interface.\n\n\nbuild_parser\nBuild the argument parser of the refined-quads command."
+  },
+  {
+    "objectID": "reference/index.html#generate-refine-and-check",
+    "href": "reference/index.html#generate-refine-and-check",
+    "title": "API reference",
+    "section": "",
+    "text": "Everything public is available from the top-level package refined_quads.\n\n\n\ngenerate\nGenerate a refined quad mesh over a domain.\n\n\nrefine\nRefine an existing mesh locally with new refinement areas.\n\n\ncheck\nCheck a mesh for hanging nodes, 2:1 balance, FM orthogonality and orientation.\n\n\nMeshReport\nResult of :func:check."
+  },
+  {
+    "objectID": "reference/index.html#meshes",
+    "href": "reference/index.html#meshes",
+    "title": "API reference",
+    "section": "",
+    "text": "Mesh\nAn immutable refined quad mesh.\n\n\nLattice\nThe fixed grid of points on which every square of a refined quad mesh has its corners.\n\n\nRefineResult\nThe result of :func:refine.\n\n\nReplacementMap\nWhat a refine did to the cells of the existing mesh."
+  },
+  {
+    "objectID": "reference/index.html#gis-input",
+    "href": "reference/index.html#gis-input",
+    "title": "API reference",
+    "section": "",
+    "text": "read_domain\nRead the domain from a GIS layer; its polygons are merged into one.\n\n\nread_refinement_areas\nRead refinement areas from a GIS layer.\n\n\nread_water_areas\nRead water areas from a GIS layer.\n\n\nAreas\nPolygons with their coordinate reference system."
+  },
+  {
+    "objectID": "reference/index.html#ugrid-net-files",
+    "href": "reference/index.html#ugrid-net-files",
+    "title": "API reference",
+    "section": "",
+    "text": "read_ugrid\nRead the 2D mesh of a UGRID netCDF file.\n\n\nwrite_ugrid\nWrite a mesh as a UGRID-1.0 netCDF file that D-HYDRO and D-Flow FM read."
+  },
+  {
+    "objectID": "reference/index.html#runs-from-a-toml-file",
+    "href": "reference/index.html#runs-from-a-toml-file",
+    "title": "API reference",
+    "section": "",
+    "text": "MeshSpec\nEverything refined-quads generate needs; one-to-one with the TOML file.\n\n\nRefineSpec\nEverything refined-quads refine needs besides the mesh; one-to-one with the TOML.\n\n\nLayerSource\nA layer of a GeoPackage or shapefile.\n\n\nRefinementSource\nA layer with refinement areas."
+  },
+  {
+    "objectID": "reference/index.html#errors",
+    "href": "reference/index.html#errors",
+    "title": "API reference",
+    "section": "",
+    "text": "InputError\nInvalid input: the package raises this instead of silently adjusting the input.\n\n\nCancelled\nThe run was cancelled through the progress callback.\n\n\nMeshRecognitionError\nAn existing mesh is not a refined quad mesh this package can refine.\n\n\nOrthogonalityRepairError\nThe orthogonality repair could not make every internal edge FM-orthogonal."
+  },
+  {
+    "objectID": "reference/index.html#command-line",
+    "href": "reference/index.html#command-line",
+    "title": "API reference",
+    "section": "",
+    "text": "Exit codes 0 success, 1 the run failed, 2 invalid input or arguments.\n\n\n\nmain\nRun the command-line interface.\n\n\nbuild_parser\nBuild the argument parser of the refined-quads command."
+  },
+  {
+    "objectID": "reference/check.html",
+    "href": "reference/check.html",
+    "title": "check",
+    "section": "",
+    "text": "check(mesh)\nCheck a mesh for hanging nodes, 2:1 balance, FM orthogonality and orientation.\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe mesh to check.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshReport\nThe findings per check; :attr:MeshReport.is_valid tells whether all pass.\n\n\n\n\n\n\nOnly nodes used by a cell are checked. Hanging nodes, 2:1 balance, orientation and levels are determined exactly on integer lattice indices; orthogonality is computed on the coordinates, as D-Flow FM does."
+  },
+  {
+    "objectID": "reference/check.html#parameters",
+    "href": "reference/check.html#parameters",
+    "title": "check",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe mesh to check.\nrequired"
+  },
+  {
+    "objectID": "reference/check.html#returns",
+    "href": "reference/check.html#returns",
+    "title": "check",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nMeshReport\nThe findings per check; :attr:MeshReport.is_valid tells whether all pass."
+  },
+  {
+    "objectID": "reference/check.html#notes",
+    "href": "reference/check.html#notes",
+    "title": "check",
+    "section": "",
+    "text": "Only nodes used by a cell are checked. Hanging nodes, 2:1 balance, orientation and levels are determined exactly on integer lattice indices; orthogonality is computed on the coordinates, as D-Flow FM does."
+  },
+  {
+    "objectID": "reference/ReplacementMap.html",
+    "href": "reference/ReplacementMap.html",
+    "title": "ReplacementMap",
+    "section": "",
+    "text": "ReplacementMap(source, unchanged, removed)\nWhat a refine did to the cells of the existing mesh.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nsource\nnumpy.ndarray of int, shape (m_new,)\nFor every cell of the new mesh, the cell of the existing mesh it lies in (for an unchanged cell: that same cell). Use it to carry cell data over.\n\n\nunchanged\nnumpy.ndarray of bool, shape (m_new,)\nTrue where the new cell is an existing cell, with the same nodes.\n\n\nremoved\nnumpy.ndarray of int\nCells of the existing mesh that are not in the new mesh: replaced by finer or re-patterned cells, or removed by the domain or the water areas."
+  },
+  {
+    "objectID": "reference/ReplacementMap.html#attributes",
+    "href": "reference/ReplacementMap.html#attributes",
+    "title": "ReplacementMap",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\nsource\nnumpy.ndarray of int, shape (m_new,)\nFor every cell of the new mesh, the cell of the existing mesh it lies in (for an unchanged cell: that same cell). Use it to carry cell data over.\n\n\nunchanged\nnumpy.ndarray of bool, shape (m_new,)\nTrue where the new cell is an existing cell, with the same nodes.\n\n\nremoved\nnumpy.ndarray of int\nCells of the existing mesh that are not in the new mesh: replaced by finer or re-patterned cells, or removed by the domain or the water areas."
+  },
+  {
+    "objectID": "reference/RefineSpec.html",
+    "href": "reference/RefineSpec.html",
+    "title": "RefineSpec",
+    "section": "",
+    "text": "RefineSpec(\n    refinement_areas,\n    transition_rows=1,\n    domain=None,\n    water_areas=(),\n    water_removal='centre',\n    crs=None,\n    output=None,\n)\nEverything refined-quads refine needs besides the mesh; one-to-one with the TOML.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nrefinement_areas\ntuple of RefinementSource\nLayers with the new refinement areas.\n\n\ntransition_rows\nint or tuple of int\nTransition rows per level step from coarse to fine, or one value for all.\n\n\ndomain\nLayerSource or None\nOptional domain: new cells outside it go, its holes are clipped like water.\n\n\nwater_areas\ntuple of LayerSource\nLayers with water areas; they clip new cells only.\n\n\nwater_removal\nstr\nWater removal rule: \"centre\", \"inside\" or \"touches\".\n\n\ncrs\nstr or None\nCRS of layers that have none.\n\n\noutput\npathlib.Path or None\nUGRID file to write.\n\n\n\n\n\n\nA TOML file, with paths relative to the file::\ntransition_rows = 1\noutput = \"mesh_v2_net.nc\"\n\n[[refinement_areas]]\npath = \"extra.gpkg\"\nlayer = \"verfijning_nieuw\"\nlevel = 3\n\n\n\n\n\n\nName\nDescription\n\n\n\n\nfrom_dict\nBuild a refine spec from the contents of a TOML file.\n\n\nfrom_toml\nRead a refine spec from a TOML file (see :meth:MeshSpec.from_toml).\n\n\nrefine\nRead the layers and refine the mesh.\n\n\nreplace\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\nRefineSpec.from_dict(data, base='.')\nBuild a refine spec from the contents of a TOML file.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ndata\nmapping\nThe parsed TOML.\nrequired\n\n\nbase\nstr or path - like\nDirectory that relative paths are relative to.\n'.'\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a key is unknown, missing or has an invalid value.\n\n\n\n\n\n\n\nRefineSpec.from_toml(path)\nRead a refine spec from a TOML file (see :meth:MeshSpec.from_toml).\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\npath\nstr or path - like\nThe TOML file. Relative paths in it are relative to its directory.\nrequired\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the file cannot be read, is not valid TOML, or a key is unknown, missing or has an invalid value.\n\n\n\n\n\n\n\nRefineSpec.refine(mesh, progress=None)\nRead the layers and refine the mesh.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe existing mesh.\nrequired\n\n\nprogress\ncallable\nProgress callback, as for :func:generate.\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineResult\nThe refined mesh and the replacement map.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a layer is invalid, or the mesh cannot be recognised (MeshRecognitionError).\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair does not close.\n\n\n\n\n\n\n\nRefineSpec.replace(**changes)\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\n**changes\nAny\nNew values for transition_rows, water_removal, crs or output.\n{}\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineSpec\nThe new spec.\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a value is invalid."
+  },
+  {
+    "objectID": "reference/RefineSpec.html#attributes",
+    "href": "reference/RefineSpec.html#attributes",
+    "title": "RefineSpec",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\nrefinement_areas\ntuple of RefinementSource\nLayers with the new refinement areas.\n\n\ntransition_rows\nint or tuple of int\nTransition rows per level step from coarse to fine, or one value for all.\n\n\ndomain\nLayerSource or None\nOptional domain: new cells outside it go, its holes are clipped like water.\n\n\nwater_areas\ntuple of LayerSource\nLayers with water areas; they clip new cells only.\n\n\nwater_removal\nstr\nWater removal rule: \"centre\", \"inside\" or \"touches\".\n\n\ncrs\nstr or None\nCRS of layers that have none.\n\n\noutput\npathlib.Path or None\nUGRID file to write."
+  },
+  {
+    "objectID": "reference/RefineSpec.html#examples",
+    "href": "reference/RefineSpec.html#examples",
+    "title": "RefineSpec",
+    "section": "",
+    "text": "A TOML file, with paths relative to the file::\ntransition_rows = 1\noutput = \"mesh_v2_net.nc\"\n\n[[refinement_areas]]\npath = \"extra.gpkg\"\nlayer = \"verfijning_nieuw\"\nlevel = 3"
+  },
+  {
+    "objectID": "reference/RefineSpec.html#methods",
+    "href": "reference/RefineSpec.html#methods",
+    "title": "RefineSpec",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\nfrom_dict\nBuild a refine spec from the contents of a TOML file.\n\n\nfrom_toml\nRead a refine spec from a TOML file (see :meth:MeshSpec.from_toml).\n\n\nrefine\nRead the layers and refine the mesh.\n\n\nreplace\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\nRefineSpec.from_dict(data, base='.')\nBuild a refine spec from the contents of a TOML file.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ndata\nmapping\nThe parsed TOML.\nrequired\n\n\nbase\nstr or path - like\nDirectory that relative paths are relative to.\n'.'\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a key is unknown, missing or has an invalid value.\n\n\n\n\n\n\n\nRefineSpec.from_toml(path)\nRead a refine spec from a TOML file (see :meth:MeshSpec.from_toml).\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\npath\nstr or path - like\nThe TOML file. Relative paths in it are relative to its directory.\nrequired\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the file cannot be read, is not valid TOML, or a key is unknown, missing or has an invalid value.\n\n\n\n\n\n\n\nRefineSpec.refine(mesh, progress=None)\nRead the layers and refine the mesh.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe existing mesh.\nrequired\n\n\nprogress\ncallable\nProgress callback, as for :func:generate.\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineResult\nThe refined mesh and the replacement map.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a layer is invalid, or the mesh cannot be recognised (MeshRecognitionError).\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair does not close.\n\n\n\n\n\n\n\nRefineSpec.replace(**changes)\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\n**changes\nAny\nNew values for transition_rows, water_removal, crs or output.\n{}\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nRefineSpec\nThe new spec.\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a value is invalid."
+  },
+  {
+    "objectID": "reference/OrthogonalityRepairError.html",
+    "href": "reference/OrthogonalityRepairError.html",
+    "title": "OrthogonalityRepairError",
+    "section": "",
+    "text": "OrthogonalityRepairError(message, bad_points=None, mesh=None)\nThe orthogonality repair could not make every internal edge FM-orthogonal.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nmessage\nstr\nDescription of the failure.\nrequired\n\n\nbad_points\nlist of (float, float, float or None)\nMidpoint (x, y) of every remaining invalid internal edge and its FM orthogonality (None for a degenerate edge).\nNone\n\n\nmesh\nMesh\nThe raw mesh as it was before the repair, to inspect or repair by hand.\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nbad_points\nlist of (float, float, float or None)\nAs above.\n\n\nmesh\nMesh or None\nAs above."
+  },
+  {
+    "objectID": "reference/OrthogonalityRepairError.html#parameters",
+    "href": "reference/OrthogonalityRepairError.html#parameters",
+    "title": "OrthogonalityRepairError",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nmessage\nstr\nDescription of the failure.\nrequired\n\n\nbad_points\nlist of (float, float, float or None)\nMidpoint (x, y) of every remaining invalid internal edge and its FM orthogonality (None for a degenerate edge).\nNone\n\n\nmesh\nMesh\nThe raw mesh as it was before the repair, to inspect or repair by hand.\nNone"
+  },
+  {
+    "objectID": "reference/OrthogonalityRepairError.html#attributes",
+    "href": "reference/OrthogonalityRepairError.html#attributes",
+    "title": "OrthogonalityRepairError",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\nbad_points\nlist of (float, float, float or None)\nAs above.\n\n\nmesh\nMesh or None\nAs above."
+  },
+  {
+    "objectID": "reference/MeshReport.html",
+    "href": "reference/MeshReport.html",
+    "title": "MeshReport",
+    "section": "",
+    "text": "MeshReport(\n    lattice,\n    n_nodes,\n    n_cells,\n    cells_per_level,\n    cell_levels,\n    off_lattice_nodes,\n    duplicate_nodes,\n    split_edges,\n    hanging_nodes,\n    balance_violations,\n    orthogonality,\n    non_orthogonal_edges,\n    max_allowed_orthogonality,\n    clockwise_cells,\n    unrecognised_cells,\n)\nResult of :func:check.\nLocations are coordinates (x, y) in the CRS of the mesh, so they can be shown on a map.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nlattice\nLattice\nThe lattice the mesh was checked against.\n\n\nn_nodes, n_cells\nint\nNumber of nodes and cells of the mesh.\n\n\ncells_per_level\ndict of int to int\nNumber of cells per refinement level; a transition cell counts at the level of the lattice square it lies in.\n\n\ncell_levels\nnumpy.ndarray of int, shape (m,)\nRefinement level of the lattice square each cell lies in; -1 for unrecognised cells.\n\n\noff_lattice_nodes\nnumpy.ndarray of float, shape (k, 2)\nNodes that are not lattice points.\n\n\nduplicate_nodes\nnumpy.ndarray of float, shape (k, 2)\nNodes at the same lattice point as another node (one row per extra node). Information only: cells that touch only in such a point lose nothing, as flow goes through edges (see split_edges).\n\n\nsplit_edges\nnumpy.ndarray of float, shape (k, 2)\nMidpoints of edges that lie on top of another edge with different nodes: an internal wall that flow cannot cross.\n\n\nhanging_nodes\nnumpy.ndarray of float, shape (k, 2)\nNodes that lie inside an edge of a cell instead of at its ends.\n\n\nbalance_violations\nnumpy.ndarray of float, shape (k, 2)\nMidpoints of sides where a lattice square meets a square more than one level coarser (2:1 balance).\n\n\northogonality\nnumpy.ndarray of float, shape (e,)\nFM orthogonality of every internal edge (an edge of exactly two cells); inf for a degenerate edge.\n\n\nnon_orthogonal_edges\nnumpy.ndarray of float, shape (k, 2)\nMidpoints of internal edges with an orthogonality above :attr:max_allowed_orthogonality or that are degenerate.\n\n\nmax_allowed_orthogonality\nfloat\nThreshold D-Flow FM applies, 0.30.\n\n\nclockwise_cells\nnumpy.ndarray of int\nCells whose nodes are not counterclockwise (clockwise or zero area).\n\n\nunrecognised_cells\nnumpy.ndarray of int\nCells that are neither a lattice square nor part of a group of transition cells that fills one; their level is unknown, so they are left out of cells_per_level and the 2:1 check.\n\n\n\n\n\n\n\n\n\nName\nDescription\n\n\n\n\nsummary\nDescribe the report in a few lines of text.\n\n\n\n\n\nMeshReport.summary()\nDescribe the report in a few lines of text.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nstr\nLattice, cells per level and the number of problems per check."
+  },
+  {
+    "objectID": "reference/MeshReport.html#attributes",
+    "href": "reference/MeshReport.html#attributes",
+    "title": "MeshReport",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\nlattice\nLattice\nThe lattice the mesh was checked against.\n\n\nn_nodes, n_cells\nint\nNumber of nodes and cells of the mesh.\n\n\ncells_per_level\ndict of int to int\nNumber of cells per refinement level; a transition cell counts at the level of the lattice square it lies in.\n\n\ncell_levels\nnumpy.ndarray of int, shape (m,)\nRefinement level of the lattice square each cell lies in; -1 for unrecognised cells.\n\n\noff_lattice_nodes\nnumpy.ndarray of float, shape (k, 2)\nNodes that are not lattice points.\n\n\nduplicate_nodes\nnumpy.ndarray of float, shape (k, 2)\nNodes at the same lattice point as another node (one row per extra node). Information only: cells that touch only in such a point lose nothing, as flow goes through edges (see split_edges).\n\n\nsplit_edges\nnumpy.ndarray of float, shape (k, 2)\nMidpoints of edges that lie on top of another edge with different nodes: an internal wall that flow cannot cross.\n\n\nhanging_nodes\nnumpy.ndarray of float, shape (k, 2)\nNodes that lie inside an edge of a cell instead of at its ends.\n\n\nbalance_violations\nnumpy.ndarray of float, shape (k, 2)\nMidpoints of sides where a lattice square meets a square more than one level coarser (2:1 balance).\n\n\northogonality\nnumpy.ndarray of float, shape (e,)\nFM orthogonality of every internal edge (an edge of exactly two cells); inf for a degenerate edge.\n\n\nnon_orthogonal_edges\nnumpy.ndarray of float, shape (k, 2)\nMidpoints of internal edges with an orthogonality above :attr:max_allowed_orthogonality or that are degenerate.\n\n\nmax_allowed_orthogonality\nfloat\nThreshold D-Flow FM applies, 0.30.\n\n\nclockwise_cells\nnumpy.ndarray of int\nCells whose nodes are not counterclockwise (clockwise or zero area).\n\n\nunrecognised_cells\nnumpy.ndarray of int\nCells that are neither a lattice square nor part of a group of transition cells that fills one; their level is unknown, so they are left out of cells_per_level and the 2:1 check."
+  },
+  {
+    "objectID": "reference/MeshReport.html#methods",
+    "href": "reference/MeshReport.html#methods",
+    "title": "MeshReport",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\nsummary\nDescribe the report in a few lines of text.\n\n\n\n\n\nMeshReport.summary()\nDescribe the report in a few lines of text.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nstr\nLattice, cells per level and the number of problems per check."
+  },
+  {
+    "objectID": "reference/Mesh.html",
+    "href": "reference/Mesh.html",
+    "title": "Mesh",
+    "section": "",
+    "text": "Mesh(nodes, faces, lattice, crs=None)\nAn immutable refined quad mesh.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nnodes\narray_like of float, shape (n, 2)\nNode coordinates.\nrequired\n\n\nfaces\narray_like of int, shape (m, k)\nNode indices of each face, counterclockwise, padded at the end with -1.\nrequired\n\n\nlattice\nLattice\nThe lattice the mesh lives on.\nrequired\n\n\ncrs\npyproj.CRS or str or int\nProjected coordinate reference system of the coordinates, or None when it is unknown; anything pyproj.CRS.from_user_input accepts.\nNone\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the arrays have the wrong shape, coordinates are not finite, a face has fewer than three nodes, refers to a missing node or has padding before a node, or the CRS is invalid or geographic (degrees).\n\n\n\n\n\n\nThe arrays are stored as read-only copies. Two meshes are compared on their cells, not with ==; see docs/adr/0002-output-contract-same-cells.qmd.\n\n\n\n\n\n\nName\nDescription\n\n\n\n\ncrs\n\n\n\nface_sizes\nNumber of nodes of each face.\n\n\nfaces\n\n\n\nlattice\n\n\n\nnodes"
+  },
+  {
+    "objectID": "reference/Mesh.html#parameters",
+    "href": "reference/Mesh.html#parameters",
+    "title": "Mesh",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nnodes\narray_like of float, shape (n, 2)\nNode coordinates.\nrequired\n\n\nfaces\narray_like of int, shape (m, k)\nNode indices of each face, counterclockwise, padded at the end with -1.\nrequired\n\n\nlattice\nLattice\nThe lattice the mesh lives on.\nrequired\n\n\ncrs\npyproj.CRS or str or int\nProjected coordinate reference system of the coordinates, or None when it is unknown; anything pyproj.CRS.from_user_input accepts.\nNone"
+  },
+  {
+    "objectID": "reference/Mesh.html#raises",
+    "href": "reference/Mesh.html#raises",
+    "title": "Mesh",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nIf the arrays have the wrong shape, coordinates are not finite, a face has fewer than three nodes, refers to a missing node or has padding before a node, or the CRS is invalid or geographic (degrees)."
+  },
+  {
+    "objectID": "reference/Mesh.html#notes",
+    "href": "reference/Mesh.html#notes",
+    "title": "Mesh",
+    "section": "",
+    "text": "The arrays are stored as read-only copies. Two meshes are compared on their cells, not with ==; see docs/adr/0002-output-contract-same-cells.qmd."
+  },
+  {
+    "objectID": "reference/Mesh.html#attributes",
+    "href": "reference/Mesh.html#attributes",
+    "title": "Mesh",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\ncrs\n\n\n\nface_sizes\nNumber of nodes of each face.\n\n\nfaces\n\n\n\nlattice\n\n\n\nnodes"
+  },
+  {
+    "objectID": "reference/Lattice.html",
+    "href": "reference/Lattice.html",
+    "title": "Lattice",
+    "section": "",
+    "text": "Lattice(origin, cell_size, levels)\nThe fixed grid of points on which every square of a refined quad mesh has its corners.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\norigin\ntuple of float\nLattice point (x, y) from which lattice indices are counted.\nrequired\n\n\ncell_size\nfloat\nSide length of the base cell; any positive length.\nrequired\n\n\nlevels\nint\nHighest refinement level; the finest square has side cell_size / 2**levels.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the origin is not finite, the cell size is not positive or the number of levels is negative.\n\n\n\n\n\n\n\n\n\nName\nDescription\n\n\n\n\ncell_size\n\n\n\nlevels\n\n\n\norigin\n\n\n\nunit\nSide length of the finest square, cell_size / 2**levels.\n\n\n\n\n\n\n\n\n\nName\nDescription\n\n\n\n\nto_coordinates\nConvert integer lattice indices to coordinates.\n\n\nto_indices\nConvert coordinates to the nearest integer lattice indices.\n\n\n\n\n\nLattice.to_coordinates(indices)\nConvert integer lattice indices to coordinates.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nindices\narray_like of int, shape (n, 2)\nLattice indices in units of :attr:unit from the origin.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nnumpy.ndarray of float, shape (n, 2)\nCoordinates origin + index * unit.\n\n\n\n\n\n\n\nLattice.to_indices(coordinates)\nConvert coordinates to the nearest integer lattice indices.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ncoordinates\narray_like of float, shape (n, 2)\nPoint coordinates.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nindices\nnumpy.ndarray of int, shape (n, 2)\nNearest lattice indices in units of :attr:unit from the origin.\n\n\non_lattice\nnumpy.ndarray of bool, shape (n,)\nTrue where the point lies within 1e-6 * unit of that lattice point."
+  },
+  {
+    "objectID": "reference/Lattice.html#parameters",
+    "href": "reference/Lattice.html#parameters",
+    "title": "Lattice",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\norigin\ntuple of float\nLattice point (x, y) from which lattice indices are counted.\nrequired\n\n\ncell_size\nfloat\nSide length of the base cell; any positive length.\nrequired\n\n\nlevels\nint\nHighest refinement level; the finest square has side cell_size / 2**levels.\nrequired"
+  },
+  {
+    "objectID": "reference/Lattice.html#raises",
+    "href": "reference/Lattice.html#raises",
+    "title": "Lattice",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nIf the origin is not finite, the cell size is not positive or the number of levels is negative."
+  },
+  {
+    "objectID": "reference/Lattice.html#attributes",
+    "href": "reference/Lattice.html#attributes",
+    "title": "Lattice",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\ncell_size\n\n\n\nlevels\n\n\n\norigin\n\n\n\nunit\nSide length of the finest square, cell_size / 2**levels."
+  },
+  {
+    "objectID": "reference/Lattice.html#methods",
+    "href": "reference/Lattice.html#methods",
+    "title": "Lattice",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\nto_coordinates\nConvert integer lattice indices to coordinates.\n\n\nto_indices\nConvert coordinates to the nearest integer lattice indices.\n\n\n\n\n\nLattice.to_coordinates(indices)\nConvert integer lattice indices to coordinates.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nindices\narray_like of int, shape (n, 2)\nLattice indices in units of :attr:unit from the origin.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nnumpy.ndarray of float, shape (n, 2)\nCoordinates origin + index * unit.\n\n\n\n\n\n\n\nLattice.to_indices(coordinates)\nConvert coordinates to the nearest integer lattice indices.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ncoordinates\narray_like of float, shape (n, 2)\nPoint coordinates.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nindices\nnumpy.ndarray of int, shape (n, 2)\nNearest lattice indices in units of :attr:unit from the origin.\n\n\non_lattice\nnumpy.ndarray of bool, shape (n,)\nTrue where the point lies within 1e-6 * unit of that lattice point."
+  },
+  {
+    "objectID": "reference/Cancelled.html",
+    "href": "reference/Cancelled.html",
+    "title": "Cancelled",
+    "section": "",
+    "text": "Cancelled\nCancelled()\nThe run was cancelled through the progress callback."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "refined-quads",
+    "section": "",
+    "text": "refined-quads generates and refines refined quad meshes for D-Flow FM: axis-aligned squares on a fixed lattice, locally refined by repeated halving, with transition cells only where refinement levels meet.\nfrom shapely import Point, box\n\nfrom refined_quads import generate\n\nmesh = generate(\n    box(155_000, 463_000, 155_640, 463_480),\n    cell_size=32.0,\n    refinement_areas=[(Point(155_250, 463_240).buffer(70), 3)],\n    transition_rows=[1, 1, 1],\n    crs=\"EPSG:28992\",\n)"
+  },
+  {
+    "objectID": "index.html#what-it-does",
+    "href": "index.html#what-it-does",
+    "title": "refined-quads",
+    "section": "What it does",
+    "text": "What it does\n\nGenerate a mesh over a domain with refinement areas, transition rows and water areas, in Python or from a TOML file on the command line.\nRefine an existing mesh — also one made by another program — with new refinement areas, without its original input; cells that do not change stay exactly as they are.\nCheck a mesh for the properties D-Flow FM and refining rely on: no hanging nodes, 2:1 balance and FM orthogonality.\nRead and write UGRID net files that D-HYDRO and D-Flow FM use."
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "refined-quads",
+    "section": "Install",
+    "text": "Install\nThe package is not on PyPI yet. Install it from the repository with uv:\nuv add \"refined-quads @ git+https://github.com/HKV-products-services/refined-quads\"\nIts dependencies (numpy, shapely, netCDF4, pyogrio, pyproj and meshkernel) all come as wheels; no separate GDAL installation is needed. On macOS the meshkernel wheel needs OpenMP from Homebrew (brew install libomp); the package is tested on Windows and Linux."
+  },
+  {
+    "objectID": "index.html#where-to-go-next",
+    "href": "index.html#where-to-go-next",
+    "title": "refined-quads",
+    "section": "Where to go next",
+    "text": "Where to go next\n\nYour first mesh walks through generating, checking and writing a mesh.\nThe how-to guides cover GIS layers, TOML files and the command line, water areas, refining and D-HYDRO.\nThe explanation pages describe the concepts and the decisions behind the design.\nThe API reference documents every public function."
+  },
+  {
+    "objectID": "how-to/toml-cli.html",
+    "href": "how-to/toml-cli.html",
+    "title": "Run from a TOML file",
+    "section": "",
+    "text": "A TOML file records a run, so you can keep it in Git and repeat it exactly. The same file works on the command line and in Python (MeshSpec)."
+  },
+  {
+    "objectID": "how-to/toml-cli.html#the-file",
+    "href": "how-to/toml-cli.html#the-file",
+    "title": "Run from a TOML file",
+    "section": "The file",
+    "text": "The file\ncell_size = 32.0\ntransition_rows = [1, 2]\nwater_removal = \"centre\"\noutput = \"mesh_net.nc\"\n\n[domain]\npath = \"model.gpkg\"\nlayer = \"modelgebied\"\n\n[[refinement_areas]]\npath = \"model.gpkg\"\nlayer = \"verfijning\"\nlevel = \"refinement\"   # a column name, or one integer level\n\n[[water_areas]]\npath = \"model.gpkg\"\nlayer = \"water\"\nPaths are relative to the TOML file. Other keys: crs (for layers without CRS), origin = [x, y] (a lattice point) and more [[refinement_areas]] or [[water_areas]] tables. An unknown key or an invalid value is an error that names the key and the reason."
+  },
+  {
+    "objectID": "how-to/toml-cli.html#generate-on-the-command-line",
+    "href": "how-to/toml-cli.html#generate-on-the-command-line",
+    "title": "Run from a TOML file",
+    "section": "Generate on the command line",
+    "text": "Generate on the command line\nrefined-quads generate run.toml\n\n\nwrote /tmp/tmp1kr_qrwa/mesh_net.nc\nlattice: origin (154976, 462976), base cell 32, 2 levels, unit 8\nnodes: 807, cells: 857\ncells per level: 0 (32): 341, 1 (16): 148, 2 (8): 368\nnodes off the lattice: 0\nduplicate nodes (information): 0\nsplit edges: 0\nhanging nodes: 0\n2:1 balance violations: 0\nnon-orthogonal edges (&gt; 0.30): 0 (worst 0.000)\nclockwise cells: 0\nunrecognised cells: 0\nvalid: yes\n\n\n0\n\n\nOptions override the file: -o other_net.nc, --cell-size 25, --transition-rows 1 1, --water-removal inside, --crs EPSG:28992, --origin 155000 463000, and -v prints the progress.\nThe exit code is 0 when the mesh is written, 1 when the run failed (the orthogonality repair did not close; then mesh_net_raw.nc and mesh_net_problems.gpkg are written next to the output) and 2 for invalid input or arguments."
+  },
+  {
+    "objectID": "how-to/toml-cli.html#look-at-a-mesh",
+    "href": "how-to/toml-cli.html#look-at-a-mesh",
+    "title": "Run from a TOML file",
+    "section": "Look at a mesh",
+    "text": "Look at a mesh\nrefined-quads info shows the lattice, the cells per refinement level and the checks of any UGRID file, also a D-HYDRO net file with a 1D network:\nrefined-quads info mesh_net.nc\n\n\n/tmp/tmp1kr_qrwa/mesh_net.nc\ncrs: EPSG:28992\nlattice: origin (154976, 462976), base cell 32, 2 levels, unit 8\nnodes: 807, cells: 857\ncells per level: 0 (32): 341, 1 (16): 148, 2 (8): 368\nnodes off the lattice: 0\nduplicate nodes (information): 0\nsplit edges: 0\nhanging nodes: 0\n2:1 balance violations: 0\nnon-orthogonal edges (&gt; 0.30): 0 (worst 0.000)\nclockwise cells: 0\nunrecognised cells: 0\nvalid: yes\n\n\n0"
+  },
+  {
+    "objectID": "how-to/toml-cli.html#the-same-in-python",
+    "href": "how-to/toml-cli.html#the-same-in-python",
+    "title": "Run from a TOML file",
+    "section": "The same in Python",
+    "text": "The same in Python\n\nfrom refined_quads import MeshSpec\n\nspec = MeshSpec.from_toml(workdir / \"run.toml\")\nmesh = spec.replace(cell_size=25.0).generate()\nprint(mesh)\n\nMesh(nodes=1133, faces=1184, cell_size=25, levels=2, crs=EPSG:28992)"
+  },
+  {
+    "objectID": "how-to/gis-layers.html",
+    "href": "how-to/gis-layers.html",
+    "title": "Read layers from a GeoPackage",
+    "section": "",
+    "text": "Most model input lives in GIS layers. read_domain, read_refinement_areas and read_water_areas read a layer of a GeoPackage or shapefile (with pyogrio; geopandas is not needed) and keep its CRS.\nThe example GeoPackage model.gpkg has three layers:\nmodelgebied  Polygon\nverfijning   Polygon\nwater        Polygon"
+  },
+  {
+    "objectID": "how-to/gis-layers.html#read-and-generate",
+    "href": "how-to/gis-layers.html#read-and-generate",
+    "title": "Read layers from a GeoPackage",
+    "section": "Read and generate",
+    "text": "Read and generate\n\nfrom refined_quads import (\n    generate,\n    read_domain,\n    read_refinement_areas,\n    read_water_areas,\n)\n\ndomain = read_domain(gpkg, \"modelgebied\")\nareas = read_refinement_areas(gpkg, \"verfijning\", level=\"refinement\")\nwater = read_water_areas(gpkg, \"water\")\n\nmesh = generate(\n    domain,\n    cell_size=32.0,\n    refinement_areas=areas,\n    transition_rows=1,\n    water_areas=water,\n)\nprint(mesh)\n\nMesh(nodes=843, faces=912, cell_size=32, levels=2, crs=EPSG:28992)\n\n\n\n \n  \n   \n    \n    2026-11-12T10:29:13.695215\n    image/svg+xml\n    \n     \n      Matplotlib v3.11.2, https://matplotlib.org/"
+  },
+  {
+    "objectID": "how-to/gis-layers.html#rules",
+    "href": "how-to/gis-layers.html#rules",
+    "title": "Read layers from a GeoPackage",
+    "section": "Rules",
+    "text": "Rules\n\nLayer name. A file with one layer needs no name; with several layers the name is required, otherwise you get an error that lists the layers.\nLevel. level is the name of a column with the refinement level per polygon, or one integer for the whole layer (level=3). A missing or invalid level (0, a negative number, 2.5, empty) raises an error that names the feature.\nDomain. All polygons of the domain layer are merged into one (multi)polygon.\nCRS. The mesh gets the CRS of the domain. Other layers are transformed to it. A layer without CRS raises an error unless you pass crs= for it; a geographic CRS (degrees) for the domain raises an error, as cell sizes must be in metres.\nGeoDataFrame. Instead of a path you may pass a GeoDataFrame (or any object with geometry and crs attributes): read_refinement_areas(frame, level=\"refinement\").\nShapely geometries. Plain shapely geometries have no CRS: pass crs= to generate (see the tutorial)."
+  },
+  {
+    "objectID": "explanation/refined-quad-mesh.html",
+    "href": "explanation/refined-quad-mesh.html",
+    "title": "Refined quad meshes",
+    "section": "",
+    "text": "A refined quad mesh is a 2D mesh of axis-aligned squares on a fixed lattice, locally refined by repeated halving, with triangles only where cell sizes change."
+  },
+  {
+    "objectID": "explanation/refined-quad-mesh.html#base-cell-refinement-level-and-lattice",
+    "href": "explanation/refined-quad-mesh.html#base-cell-refinement-level-and-lattice",
+    "title": "Refined quad meshes",
+    "section": "Base cell, refinement level and lattice",
+    "text": "Base cell, refinement level and lattice\nThe base cell is the coarsest square; its size is any positive length, for example 32 m or 25 m. Each refinement level halves it once: level 0 is the base cell, level L has side cell size / 2**L. A 25 m base cell gives 12.5, 6.25 and 3.125 m cells at levels 1 to 3.\nThe lattice is the fixed grid of points on which every square has its corners: an origin and the base cell. By default the origin is the lower-left corner of the domain rounded down to a multiple of the base cell, so meshes with the same base cell line up. Internally every corner is an integer index on the finest level of the lattice, so coordinates are computed once, as origin + index * unit, and comparisons are exact.\nA lattice square is a square of the quadtree: a base cell or one of the squares its halving gives. It becomes one square cell, or is filled by transition cells."
+  },
+  {
+    "objectID": "explanation/refined-quad-mesh.html#transition-rows-and-transition-cells",
+    "href": "explanation/refined-quad-mesh.html#transition-rows-and-transition-cells",
+    "title": "Refined quad meshes",
+    "section": "Transition rows and transition cells",
+    "text": "Transition rows and transition cells\nAround a refinement area the mesh does not jump from fine to coarse at once. Transition rows set, per step from coarse to fine, how many rows of finer cells surround the finer area before the mesh coarsens:\n\n \n  \n   \n    \n    2026-11-12T10:29:09.725087\n    image/svg+xml\n    \n     \n      Matplotlib v3.11.2, https://matplotlib.org/\n     \n    \n   \n  \n \n \n  \n \n \n  \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n    \n     \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n    \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n    \n     \n      \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n    \n   \n  \n \n \n  \n   \n  \n  \n   \n  \n \n\n\nNeighbouring lattice squares differ at most one level (2:1 balance). Where a finer square meets a coarser one, the coarser square gets a node in the middle of that side and is split into transition cells: one split side gives a fan of three triangles, two adjacent split sides four triangles, and two opposite or three or four split sides four squares around the centre. Together they fill the lattice square exactly, so there are no hanging nodes (nodes in the middle of another cell’s edge)."
+  },
+  {
+    "objectID": "explanation/refined-quad-mesh.html#domain-and-water",
+    "href": "explanation/refined-quad-mesh.html#domain-and-water",
+    "title": "Refined quad meshes",
+    "section": "Domain and water",
+    "text": "Domain and water\nThe domain encloses the mesh. A lattice square that overlaps it is kept whole, so the outer edge follows the lattice rather than the polygon exactly. Water areas and holes in the domain are clipped out of the finished mesh cell by cell (see Water areas); after that some lattice squares are filled only partly, which is how the remaining cells follow the water’s edge."
+  },
+  {
+    "objectID": "explanation/orthogonality.html",
+    "href": "explanation/orthogonality.html",
+    "title": "FM orthogonality",
+    "section": "",
+    "text": "D-Flow FM computes the flow between two cells along the line that joins their centres. That works well when the line crosses their shared edge at a right angle; D-Flow FM rejects a network (“network is not orthogonal”) where it does not."
+  },
+  {
+    "objectID": "explanation/orthogonality.html#the-measure",
+    "href": "explanation/orthogonality.html#the-measure",
+    "title": "FM orthogonality",
+    "section": "The measure",
+    "text": "The measure\nFor every internal edge (an edge of exactly two cells):\north_e = | cos(angle between the edge and the line joining the two cell centres) |\n0 is perfectly orthogonal and 1 the worst; an edge is acceptable when orth_e &lt;= 0.30. The centre of a triangle is its circumcentre clipped into the triangle (the RGFGRID centre), the centre of any other cell the mean of its nodes. Clipping matters: the raw circumcentre of an obtuse sliver lies far outside it, on the perpendicular bisector of every edge, which would hide exactly the slivers D-Flow FM rejects. This is the measure of the D-HYDRO mesh editor; check reports it per edge.\n\nfrom shapely import Point, box\n\nfrom refined_quads import check, generate\n\nmesh = generate(\n    box(155_000, 463_000, 155_320, 463_240),\n    cell_size=32.0,\n    refinement_areas=[(Point(155_160, 463_120).buffer(40), 2)],\n    transition_rows=[1, 1],\n    crs=\"EPSG:28992\",\n)\nreport = check(mesh)\nprint(f\"{report.orthogonality.size} internal edges, worst orth_e = {report.max_orthogonality:.3f}\")\n\n653 internal edges, worst orth_e = 0.000"
+  },
+  {
+    "objectID": "explanation/orthogonality.html#repair",
+    "href": "explanation/orthogonality.html#repair",
+    "title": "FM orthogonality",
+    "section": "Repair",
+    "text": "Repair\nThe transition patterns are orthogonal by construction. Later steps (the head-to-toe correction of neighbouring transition squares, resolving hanging nodes) can still leave a sliver. The generator therefore checks every internal edge at the end and repairs bad ones: it flips the shared diagonal of two triangles where that helps, and otherwise emits the lattice square around the edge again in its canonical pattern. All of this works on integer lattice indices; only the measure uses coordinates. If invalid edges remain, OrthogonalityRepairError carries the raw mesh and their locations.\nWhen refining, only edges next to new cells are judged: a mesh from another program may have edges that are not orthogonal by this measure (for example pentagon transition cells, whose centroid is off-centre), and refine does not fail on what it did not change."
+  },
+  {
+    "objectID": "adr/0002-output-contract-same-cells.html",
+    "href": "adr/0002-output-contract-same-cells.html",
+    "title": "Output contract: the same cells, compared on lattice indices",
+    "section": "",
+    "text": "Two meshes are “the same” when they contain the same set of cells, with every node compared as an integer lattice index (in units of base cell / 2^L from the lattice origin, normalised to the finest level of both meshes). The order of cells and the numbering of nodes are free. Golden-master meshes from the generator at qgis_dhydamo 9a324bc guard this contract; any intended change to the cells a given input produces is a minor version or higher, with a changelog entry."
+  },
+  {
+    "objectID": "adr/0002-output-contract-same-cells.html#considered-options",
+    "href": "adr/0002-output-contract-same-cells.html#considered-options",
+    "title": "Output contract: the same cells, compared on lattice indices",
+    "section": "Considered Options",
+    "text": "Considered Options\n\nBit-identical arrays, order included. Rejected: it blocks restructuring (vectorising, a different iteration order) without benefiting any caller. rooster_2d_verfijnen already compares cells independently of order.\nFloat coordinates with a tolerance. Rejected: a tolerance makes “equal” fuzzy, and float coordinates can differ in the last bit between runs when the base cell is not an exact binary fraction (e.g. 10.1 m) and the lattice origin differs."
+  },
+  {
+    "objectID": "adr/0002-output-contract-same-cells.html#consequences",
+    "href": "adr/0002-output-contract-same-cells.html#consequences",
+    "title": "Output contract: the same cells, compared on lattice indices",
+    "section": "Consequences",
+    "text": "Consequences\n\nA cell is compared as a polygon: the node it starts with and its orientation are free. The generator at 9a324bc writes about 5% of its transition triangles clockwise; this package writes every face counterclockwise, and check reports the orientation separately.\nEverything up to the final conversion works in integer lattice indices, including the centre nodes the orthogonality repair adds.\nDropping the old 1 m minimum cell size is an intended output change: a 24 m base cell asked for 5 levels now gives 0.75 m cells instead of being capped at 1.5 m."
+  },
+  {
+    "objectID": "adr/0001-refine-from-existing-mesh.html",
+    "href": "adr/0001-refine-from-existing-mesh.html",
+    "title": "Refine starts from the existing mesh; generate is refine of an empty base grid",
+    "section": "",
+    "text": "Refining an existing refined quad mesh rebuilds the quadtree from the mesh’s own cells (squares as leaves, transition triangles as parts of their parent square) on a lattice derived from the mesh, adds the new refinement areas, re-balances only where needed and leaves all other cells exactly in place. Generating a new mesh is the same operation applied to the base grid covering the domain, so there is one engine and the property refine(generate(X), Y) == generate(X + Y) can be tested."
+  },
+  {
+    "objectID": "adr/0001-refine-from-existing-mesh.html#considered-options",
+    "href": "adr/0001-refine-from-existing-mesh.html#considered-options",
+    "title": "Refine starts from the existing mesh; generate is refine of an empty base grid",
+    "section": "Considered Options",
+    "text": "Considered Options\n\nRe-run the generator with the original input (the approach of rooster_2d_verfijnen in DHYDRO_Varianten: run twice in a window, without and with the new areas, and splice in the difference). Rejected: it needs the original generator input (config.ini) and only works for meshes this generator made with a lattice origin at a multiple of the base cell. It also fails for meshes made before 24-10-2026: the generator then rounded the base cell down to a power of 2 (25 m became 16 m), so re-running the recorded input now gives a different lattice."
+  },
+  {
+    "objectID": "adr/0001-refine-from-existing-mesh.html#consequences",
+    "href": "adr/0001-refine-from-existing-mesh.html#consequences",
+    "title": "Refine starts from the existing mesh; generate is refine of an empty base grid",
+    "section": "Consequences",
+    "text": "Consequences\n\nRefine never grows the mesh: new cells only replace existing ones within the footprint. A domain or water areas given to refine only remove new cells. The property above therefore holds exactly when the same domain and water areas are used and Y does not reach cells that generate(X) removed for water or domain.\nMeshes from other tools can be refined, as long as their cells are axis-aligned squares on one lattice (rectangles and rotated grids are out of scope for now).\nThe original generator input is no longer needed to refine a mesh."
+  },
+  {
+    "objectID": "adr/index.html",
+    "href": "adr/index.html",
+    "title": "Decisions",
+    "section": "",
+    "text": "Architectural decisions that are hard to reverse, surprising without context and the result of a real trade-off.\n\n0001 — Refine starts from the existing mesh\n0002 — Output contract: the same cells, compared on lattice indices"
+  },
+  {
+    "objectID": "explanation/refine.html",
+    "href": "explanation/refine.html",
+    "title": "Why refine starts from the mesh",
+    "section": "",
+    "text": "Refining used to mean generating the mesh twice with the original input, once with and once without the new areas, and splicing in the difference. That needs the original input, works only for meshes this generator made on a lattice through a multiple of the base cell, and fails for models made before 24-10-2026, when the generator still rounded the base cell down to a power of 2 (25 m became 16 m).\nrefine starts from the mesh itself instead (ADR-0001):\ngenerate is the same operation started from the base grid, which is why refine(generate(X), Y) gives the same cells as generate(X + Y) when the domain and the water areas are the same and Y stays away from where water or the domain removed cells."
+  },
+  {
+    "objectID": "explanation/refine.html#the-footprint-rule",
+    "href": "explanation/refine.html#the-footprint-rule",
+    "title": "Why refine starts from the mesh",
+    "section": "The footprint rule",
+    "text": "The footprint rule\nThe footprint is the area the cells of the mesh cover; holes are not part of it. Refining never adds cells outside it: new cells only replace existing ones. A domain or water areas given to refine only remove new cells.\nA lattice square that its cells fill only partly — because cells were clipped along water — is recognised too. Untouched, it keeps its remaining cells. When it must become finer, a new cell in it stays only where it lies completely within the old cells, so the mesh does not grow into the water; where finer cells cannot fill a clipped triangle exactly, a little area is lost."
+  },
+  {
+    "objectID": "explanation/refine.html#meshes-from-other-programs",
+    "href": "explanation/refine.html#meshes-from-other-programs",
+    "title": "Why refine starts from the mesh",
+    "section": "Meshes from other programs",
+    "text": "Meshes from other programs\nThe lattice — origin, base cell and levels — is derived from the square cells, so any origin and any base cell work. Transition cells may follow any pattern (another triangulation, a pentagon) as long as the cells of a lattice square have their nodes only at its corners, side midpoints and centre. A square that is touched gets this package’s patterns; a square that is not keeps its own."
+  },
+  {
+    "objectID": "explanation/refine.html#when-refine-refuses",
+    "href": "explanation/refine.html#when-refine-refuses",
+    "title": "Why refine starts from the mesh",
+    "section": "When refine refuses",
+    "text": "When refine refuses\nrefine raises MeshRecognitionError, an input error with the problem locations, when:\n\nnodes do not lie on one lattice;\ncells fill no lattice square (a node at a third of a side, for example);\nthe 2:1 balance is broken (a square next to one more than one level coarser).\n\nA mesh of rectangles or rotated cells has no lattice at all and raises an input error when it is read. On the command line the locations are written to &lt;output&gt;_recognition.gpkg. Duplicate nodes (two nodes at one point) are accepted: cells that touch only in such a point lose nothing, as flow goes through edges."
+  },
+  {
+    "objectID": "how-to/d-hydro.html",
+    "href": "how-to/d-hydro.html",
+    "title": "Use the mesh in D-HYDRO",
+    "section": "",
+    "text": "from refined_quads import write_ugrid\n\nwrite_ugrid(mesh, workdir / \"mesh_net.nc\")\n\nThe file is UGRID-1.0 with the structure of the D-HYDRO mesh generator export: the Mesh2d topology with nodes, edges and faces, edge and face coordinates and face bounds. For EPSG:28992 the CRS variable has exactly the attributes of the D-Flow FM plugin; for another projected CRS they are derived with pyproj; a mesh without CRS gets no CRS variable.\n\n\nvariables: projected_coordinate_system, Mesh2d, Mesh2d_node_x, Mesh2d_node_y, Mesh2d_node_z, Mesh2d_face_nodes, Mesh2d_edge_nodes, Mesh2d_edge_x, Mesh2d_edge_y, Mesh2d_face_x, Mesh2d_face_y, Mesh2d_face_z, Mesh2d_face_x_bnd, Mesh2d_face_y_bnd\nCRS: Amersfoort / RD New (EPSG 28992)"
+  },
+  {
+    "objectID": "how-to/d-hydro.html#write-a-net-file",
+    "href": "how-to/d-hydro.html#write-a-net-file",
+    "title": "Use the mesh in D-HYDRO",
+    "section": "",
+    "text": "from refined_quads import write_ugrid\n\nwrite_ugrid(mesh, workdir / \"mesh_net.nc\")\n\nThe file is UGRID-1.0 with the structure of the D-HYDRO mesh generator export: the Mesh2d topology with nodes, edges and faces, edge and face coordinates and face bounds. For EPSG:28992 the CRS variable has exactly the attributes of the D-Flow FM plugin; for another projected CRS they are derived with pyproj; a mesh without CRS gets no CRS variable.\n\n\nvariables: projected_coordinate_system, Mesh2d, Mesh2d_node_x, Mesh2d_node_y, Mesh2d_node_z, Mesh2d_face_nodes, Mesh2d_edge_nodes, Mesh2d_edge_x, Mesh2d_edge_y, Mesh2d_face_x, Mesh2d_face_y, Mesh2d_face_z, Mesh2d_face_x_bnd, Mesh2d_face_y_bnd\nCRS: Amersfoort / RD New (EPSG 28992)"
+  },
+  {
+    "objectID": "how-to/d-hydro.html#bed-levels",
+    "href": "how-to/d-hydro.html#bed-levels",
+    "title": "Use the mesh in D-HYDRO",
+    "section": "Bed levels",
+    "text": "Bed levels\nMesh2d_node_z and Mesh2d_face_z hold -999 (no data), written without a fill value so that readers do not mask them. Give the bed level as samples (an xyz file) that D-HYDRO interpolates onto the cells: clipping water with MeshKernel can change cells (see Water areas), so values per cell would not fit."
+  },
+  {
+    "objectID": "how-to/d-hydro.html#read-a-net-file",
+    "href": "how-to/d-hydro.html#read-a-net-file",
+    "title": "Use the mesh in D-HYDRO",
+    "section": "Read a net file",
+    "text": "Read a net file\nread_ugrid reads only the 2D mesh of a net file; a 1D network and other variables in it are ignored. The lattice is derived from the square cells, so you can check or refine a mesh from any program:\n\nfrom refined_quads import check, read_ugrid\n\nmesh = read_ugrid(workdir / \"mesh_net.nc\")\nprint(check(mesh).summary())\n\nlattice: origin (154976, 462976), base cell 32, 1 levels, unit 16\nnodes: 183, cells: 187\ncells per level: 0 (32): 115, 1 (16): 72\nnodes off the lattice: 0\nduplicate nodes (information): 0\nsplit edges: 0\nhanging nodes: 0\n2:1 balance violations: 0\nnon-orthogonal edges (&gt; 0.30): 0 (worst 0.000)\nclockwise cells: 0\nunrecognised cells: 0\nvalid: yes"
+  },
+  {
+    "objectID": "how-to/d-hydro.html#if-the-orthogonality-repair-does-not-close",
+    "href": "how-to/d-hydro.html#if-the-orthogonality-repair-does-not-close",
+    "title": "Use the mesh in D-HYDRO",
+    "section": "If the orthogonality repair does not close",
+    "text": "If the orthogonality repair does not close\nD-Flow FM rejects a network whose edges are not orthogonal enough. The generator repairs such edges; if that does not close, generate raises OrthogonalityRepairError with the raw mesh (exc.mesh) and the problem locations (exc.bad_points), and the command line writes &lt;output&gt;_raw.nc and &lt;output&gt;_problems.gpkg next to the output so you can look at them in QGIS."
+  },
+  {
+    "objectID": "how-to/refine.html",
+    "href": "how-to/refine.html",
+    "title": "Refine an existing mesh",
+    "section": "",
+    "text": "refine makes an existing mesh finer in new refinement areas. It needs only the mesh: not the input it was generated with, and not even a mesh made by this package. Cells outside the affected area stay exactly as they are, nodes included, so the rest of the model is untouched."
+  },
+  {
+    "objectID": "how-to/refine.html#in-python",
+    "href": "how-to/refine.html#in-python",
+    "title": "Refine an existing mesh",
+    "section": "In Python",
+    "text": "In Python\n\nfrom refined_quads import check, read_ugrid, refine\n\nmesh = read_ugrid(workdir / \"model_net.nc\")\nnew_area = Point(155_340, 463_170).buffer(45)\n\nresult = refine(mesh, [(new_area, 2)], transition_rows=1, crs=\"EPSG:28992\")\n\nprint(result.mesh)\nprint(\"valid:\", check(result.mesh).is_valid)\n\nMesh(nodes=535, faces=604, cell_size=32, levels=2, crs=EPSG:28992)\nvalid: True\n\n\nBefore and after; the new or changed cells are highlighted:\n\n \n  \n   \n    \n    2026-11-12T10:29:15.769621\n    image/svg+xml\n    \n     \n      Matplotlib v3.11.2, https://matplotlib.org/\n     \n    \n   \n  \n \n \n  \n \n \n  \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n    \n     \n      \n      \n      \n      \n      \n     \n     \n     \n     \n     \n     \n     \n    \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n    \n     \n      \n      \n     \n     \n     \n     \n     \n     \n    \n   \n  \n \n \n  \n   \n  \n  \n   \n  \n \n\n\ntransition_rows works as for generate: one value per level step, or one value for all. A level finer than the mesh has adds levels to its lattice."
+  },
+  {
+    "objectID": "how-to/refine.html#carry-cell-data-over-the-replacement-map",
+    "href": "how-to/refine.html#carry-cell-data-over-the-replacement-map",
+    "title": "Refine an existing mesh",
+    "section": "Carry cell data over: the replacement map",
+    "text": "Carry cell data over: the replacement map\nresult.replacement_map relates the new cells to the old ones:\n\nsource[i]: the old cell that new cell i lies in (for an unchanged cell, itself);\nunchanged[i]: whether new cell i is an old cell with the same nodes;\nremoved: the old cells that are not in the new mesh.\n\nPer-cell values of the old mesh, such as an initial water level, carry over in one line:\n\nold_values = np.linspace(10.0, 12.0, len(mesh.faces))  # one value per old cell\nrm = result.replacement_map\n\nnew_values = old_values[rm.source]\n\nprint(\n    f\"{rm.unchanged.sum()} cells unchanged, {(~rm.unchanged).sum()} new, \"\n    f\"{len(rm.removed)} old cells replaced\"\n)\n\n239 cells unchanged, 365 new, 44 old cells replaced"
+  },
+  {
+    "objectID": "how-to/refine.html#on-the-command-line",
+    "href": "how-to/refine.html#on-the-command-line",
+    "title": "Refine an existing mesh",
+    "section": "On the command line",
+    "text": "On the command line\nPut the new areas in a TOML file:\ntransition_rows = 1\n\n[[refinement_areas]]\npath = \"extra.gpkg\"\nlayer = \"verfijning_nieuw\"\nlevel = 2\nrefined-quads refine model_net.nc extra.toml -o model_v2_net.nc\nThe options and exit codes are those of generate. A mesh that cannot be recognised exits with 2 and writes model_v2_net_recognition.gpkg with the problem locations."
+  },
+  {
+    "objectID": "how-to/refine.html#domain-and-water-areas",
+    "href": "how-to/refine.html#domain-and-water-areas",
+    "title": "Refine an existing mesh",
+    "section": "Domain and water areas",
+    "text": "Domain and water areas\nYou may pass a domain and water areas to refine (or put them in the TOML file). They only remove new cells: existing cells stay. The domain’s holes are clipped like water. The mesh never grows: new cells only replace existing ones, inside the footprint of the mesh. See Why refine starts from the mesh."
+  },
+  {
+    "objectID": "how-to/water-areas.html",
+    "href": "how-to/water-areas.html",
+    "title": "Water areas",
+    "section": "",
+    "text": "Water areas are where the 1D network carries the flow, so no 2D cells are kept there. Typically you refine along a watercourse and then cut the watercourse out: the small cells that remain follow its edge as closely as possible."
+  },
+  {
+    "objectID": "how-to/water-areas.html#cut-out-cell-by-cell",
+    "href": "how-to/water-areas.html#cut-out-cell-by-cell",
+    "title": "Water areas",
+    "section": "Cut out cell by cell",
+    "text": "Cut out cell by cell\ngenerate first makes the whole mesh and then removes cells with MeshKernel, exactly as the model-building workflow does (hydrolib’s mesh2d_clip): the water polygons are merged, each part is clipped with MeshKernel’s mesh deletion, and hanging edges are removed. The water removal rule decides which cells go:\n\n\n\n\n\n\n\n\nRule\nA cell is removed when\nMeshKernel option\n\n\n\n\n\"centre\" (default)\nits circumcentre (triangle) or centroid lies in water\nFACES_WITH_INCLUDED_CIRCUMCENTERS\n\n\n\"inside\"\nit lies completely in water\nINSIDE_NOT_INTERSECTED\n\n\n\"touches\"\nit touches water\nINSIDE_AND_INTERSECTED\n\n\n\n\nmeshes = {\n    rule: generate(\n        domain,\n        cell_size=16.0,\n        refinement_areas=[(river.buffer(10), 2)],\n        transition_rows=1,\n        water_areas=[river],\n        water_removal=rule,\n        crs=\"EPSG:28992\",\n    )\n    for rule in (\"centre\", \"inside\", \"touches\")\n}\n\n\n \n  \n   \n    \n    2026-11-12T10:29:19.851798\n    image/svg+xml\n    \n     \n      Matplotlib v3.11.2, https://matplotlib.org/\n     \n    \n   \n  \n \n \n  \n \n \n  \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n    \n     \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n      \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n    \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n    \n     \n      \n      \n      \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n    \n   \n  \n  \n   \n    \n   \n   \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n   \n   \n    \n   \n   \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n   \n   \n    \n    \n     \n      \n      \n      \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n    \n   \n  \n \n \n  \n   \n  \n  \n   \n  \n  \n   \n  \n \n\n\n\n\n\n\n\n\nNoteWhat MeshKernel does\n\n\n\nMeshKernel keeps nodes and edges and derives the cells from them again. A single removed cell whose edges all stay (its neighbours all remain) therefore comes back, and a hole of three or four nodes becomes a cell again. That is accepted here, because it is what the models are built with; give bed levels as samples that are interpolated onto the cells rather than as values per cell."
+  },
+  {
+    "objectID": "how-to/water-areas.html#holes-in-the-domain",
+    "href": "how-to/water-areas.html#holes-in-the-domain",
+    "title": "Water areas",
+    "section": "Holes in the domain",
+    "text": "Holes in the domain\nA hole in the domain is clipped the same way, with the same rule. An island inside a hole keeps its cells."
+  },
+  {
+    "objectID": "how-to/water-areas.html#in-the-toml-file",
+    "href": "how-to/water-areas.html#in-the-toml-file",
+    "title": "Water areas",
+    "section": "In the TOML file",
+    "text": "In the TOML file\nwater_removal = \"centre\"\n\n[[water_areas]]\npath = \"model.gpkg\"\nlayer = \"water\""
+  },
+  {
+    "objectID": "reference/Areas.html",
+    "href": "reference/Areas.html",
+    "title": "Areas",
+    "section": "",
+    "text": "Areas(geometries, crs, levels=None)\nPolygons with their coordinate reference system.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ngeometries\nsequence of shapely geometry\nThe polygons.\nrequired\n\n\ncrs\npyproj.CRS or str or int\nCRS of the coordinates; anything pyproj.CRS.from_user_input accepts.\nrequired\n\n\nlevels\nsequence of int\nRefinement level per polygon, for refinement areas.\nNone\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the CRS is invalid or the number of levels differs from the number of polygons.\n\n\n\n\n\n\n\n\n\nName\nDescription\n\n\n\n\ncrs\n\n\n\ngeometries\n\n\n\nlevels\n\n\n\n\n\n\n\n\n\n\nName\nDescription\n\n\n\n\nto_crs\nReturn the polygons in another CRS.\n\n\n\n\n\nAreas.to_crs(crs)\nReturn the polygons in another CRS.\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ncrs\npyproj.CRS\nTarget CRS.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nAreas\nThe same polygons and levels with transformed coordinates."
+  },
+  {
+    "objectID": "reference/Areas.html#parameters",
+    "href": "reference/Areas.html#parameters",
+    "title": "Areas",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\ngeometries\nsequence of shapely geometry\nThe polygons.\nrequired\n\n\ncrs\npyproj.CRS or str or int\nCRS of the coordinates; anything pyproj.CRS.from_user_input accepts.\nrequired\n\n\nlevels\nsequence of int\nRefinement level per polygon, for refinement areas.\nNone"
+  },
+  {
+    "objectID": "reference/Areas.html#raises",
+    "href": "reference/Areas.html#raises",
+    "title": "Areas",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nIf the CRS is invalid or the number of levels differs from the number of polygons."
+  },
+  {
+    "objectID": "reference/Areas.html#attributes",
+    "href": "reference/Areas.html#attributes",
+    "title": "Areas",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\ncrs\n\n\n\ngeometries\n\n\n\nlevels"
+  },
+  {
+    "objectID": "reference/Areas.html#methods",
+    "href": "reference/Areas.html#methods",
+    "title": "Areas",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\nto_crs\nReturn the polygons in another CRS.\n\n\n\n\n\nAreas.to_crs(crs)\nReturn the polygons in another CRS.\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ncrs\npyproj.CRS\nTarget CRS.\nrequired\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nAreas\nThe same polygons and levels with transformed coordinates."
+  },
+  {
+    "objectID": "reference/InputError.html",
+    "href": "reference/InputError.html",
+    "title": "InputError",
+    "section": "",
+    "text": "InputError\nInputError()\nInvalid input: the package raises this instead of silently adjusting the input."
+  },
+  {
+    "objectID": "reference/LayerSource.html",
+    "href": "reference/LayerSource.html",
+    "title": "LayerSource",
+    "section": "",
+    "text": "LayerSource(path, layer=None)\nA layer of a GeoPackage or shapefile.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\npath\npathlib.Path\nThe file.\n\n\nlayer\nstr or None\nLayer name; may be omitted when the file has one layer."
+  },
+  {
+    "objectID": "reference/LayerSource.html#attributes",
+    "href": "reference/LayerSource.html#attributes",
+    "title": "LayerSource",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\npath\npathlib.Path\nThe file.\n\n\nlayer\nstr or None\nLayer name; may be omitted when the file has one layer."
+  },
+  {
+    "objectID": "reference/MeshRecognitionError.html",
+    "href": "reference/MeshRecognitionError.html",
+    "title": "MeshRecognitionError",
+    "section": "",
+    "text": "MeshRecognitionError(message, locations)\nAn existing mesh is not a refined quad mesh this package can refine.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nmessage\nstr\nWhat is wrong.\nrequired\n\n\nlocations\nlist of (float, float)\nWhere: nodes off the lattice, cells that fill no lattice square, or sides where the 2:1 balance is broken.\nrequired\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nlocations\nlist of (float, float)\nAs above."
+  },
+  {
+    "objectID": "reference/MeshRecognitionError.html#parameters",
+    "href": "reference/MeshRecognitionError.html#parameters",
+    "title": "MeshRecognitionError",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nmessage\nstr\nWhat is wrong.\nrequired\n\n\nlocations\nlist of (float, float)\nWhere: nodes off the lattice, cells that fill no lattice square, or sides where the 2:1 balance is broken.\nrequired"
+  },
+  {
+    "objectID": "reference/MeshRecognitionError.html#attributes",
+    "href": "reference/MeshRecognitionError.html#attributes",
+    "title": "MeshRecognitionError",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\nlocations\nlist of (float, float)\nAs above."
+  },
+  {
+    "objectID": "reference/MeshSpec.html",
+    "href": "reference/MeshSpec.html",
+    "title": "MeshSpec",
+    "section": "",
+    "text": "MeshSpec(\n    cell_size,\n    domain,\n    refinement_areas=(),\n    transition_rows=1,\n    water_areas=(),\n    water_removal='centre',\n    crs=None,\n    origin=None,\n    output=None,\n)\nEverything refined-quads generate needs; one-to-one with the TOML file.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\ncell_size\nfloat\nBase cell size.\n\n\ndomain\nLayerSource\nLayer with the domain polygons.\n\n\nrefinement_areas\ntuple of RefinementSource\nLayers with refinement areas.\n\n\ntransition_rows\nint or tuple of int\nTransition rows per level step from coarse to fine, or one value for all.\n\n\nwater_areas\ntuple of LayerSource\nLayers with water areas.\n\n\nwater_removal\nstr\nWater removal rule: \"centre\", \"inside\" or \"touches\".\n\n\ncrs\nstr or None\nCRS of layers that have none.\n\n\norigin\ntuple of float or None\nA lattice point, [x, y] in the TOML; by default a multiple of the cell size.\n\n\noutput\npathlib.Path or None\nUGRID file to write.\n\n\n\n\n\n\nA TOML file, with paths relative to the file::\ncell_size = 25.0\ntransition_rows = [1, 1, 2]\nwater_removal = \"centre\"\noutput = \"mesh_net.nc\"\n\n[domain]\npath = \"model.gpkg\"\nlayer = \"modelgebied\"\n\n[[refinement_areas]]\npath = \"model.gpkg\"\nlayer = \"verfijning\"\nlevel = \"refinement\"   # column name, or one integer level\n\n[[water_areas]]\npath = \"model.gpkg\"\nlayer = \"water\"\n\n\n\n\n\n\nName\nDescription\n\n\n\n\nfrom_dict\nBuild a spec from the contents of a TOML file.\n\n\nfrom_toml\nRead a spec from a TOML file.\n\n\ngenerate\nRead the layers and generate the mesh.\n\n\nreplace\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\nMeshSpec.from_dict(data, base='.')\nBuild a spec from the contents of a TOML file.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ndata\nmapping\nThe parsed TOML.\nrequired\n\n\nbase\nstr or path - like\nDirectory that relative paths are relative to.\n'.'\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a key is unknown, missing or has an invalid value.\n\n\n\n\n\n\n\nMeshSpec.from_toml(path)\nRead a spec from a TOML file.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\npath\nstr or path - like\nThe TOML file. Relative paths in it are relative to its directory.\nrequired\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the file cannot be read, is not valid TOML, or a key is unknown, missing or has an invalid value; the message names the key and the reason.\n\n\n\n\n\n\n\nMeshSpec.generate(progress=None)\nRead the layers and generate the mesh.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nprogress\ncallable\nProgress callback, as for :func:generate.\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMesh\nThe mesh, in the CRS of the domain.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a layer is invalid (see :func:read_domain and :func:generate).\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair does not close.\n\n\n\n\n\n\n\nMeshSpec.replace(**changes)\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\n**changes\nAny\nNew values for cell_size, transition_rows, water_removal, crs, origin or output.\n{}\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshSpec\nThe new spec.\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a value is invalid."
+  },
+  {
+    "objectID": "reference/MeshSpec.html#attributes",
+    "href": "reference/MeshSpec.html#attributes",
+    "title": "MeshSpec",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\ncell_size\nfloat\nBase cell size.\n\n\ndomain\nLayerSource\nLayer with the domain polygons.\n\n\nrefinement_areas\ntuple of RefinementSource\nLayers with refinement areas.\n\n\ntransition_rows\nint or tuple of int\nTransition rows per level step from coarse to fine, or one value for all.\n\n\nwater_areas\ntuple of LayerSource\nLayers with water areas.\n\n\nwater_removal\nstr\nWater removal rule: \"centre\", \"inside\" or \"touches\".\n\n\ncrs\nstr or None\nCRS of layers that have none.\n\n\norigin\ntuple of float or None\nA lattice point, [x, y] in the TOML; by default a multiple of the cell size.\n\n\noutput\npathlib.Path or None\nUGRID file to write."
+  },
+  {
+    "objectID": "reference/MeshSpec.html#examples",
+    "href": "reference/MeshSpec.html#examples",
+    "title": "MeshSpec",
+    "section": "",
+    "text": "A TOML file, with paths relative to the file::\ncell_size = 25.0\ntransition_rows = [1, 1, 2]\nwater_removal = \"centre\"\noutput = \"mesh_net.nc\"\n\n[domain]\npath = \"model.gpkg\"\nlayer = \"modelgebied\"\n\n[[refinement_areas]]\npath = \"model.gpkg\"\nlayer = \"verfijning\"\nlevel = \"refinement\"   # column name, or one integer level\n\n[[water_areas]]\npath = \"model.gpkg\"\nlayer = \"water\""
+  },
+  {
+    "objectID": "reference/MeshSpec.html#methods",
+    "href": "reference/MeshSpec.html#methods",
+    "title": "MeshSpec",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\nfrom_dict\nBuild a spec from the contents of a TOML file.\n\n\nfrom_toml\nRead a spec from a TOML file.\n\n\ngenerate\nRead the layers and generate the mesh.\n\n\nreplace\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\nMeshSpec.from_dict(data, base='.')\nBuild a spec from the contents of a TOML file.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ndata\nmapping\nThe parsed TOML.\nrequired\n\n\nbase\nstr or path - like\nDirectory that relative paths are relative to.\n'.'\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a key is unknown, missing or has an invalid value.\n\n\n\n\n\n\n\nMeshSpec.from_toml(path)\nRead a spec from a TOML file.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\npath\nstr or path - like\nThe TOML file. Relative paths in it are relative to its directory.\nrequired\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshSpec\nThe validated spec.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf the file cannot be read, is not valid TOML, or a key is unknown, missing or has an invalid value; the message names the key and the reason.\n\n\n\n\n\n\n\nMeshSpec.generate(progress=None)\nRead the layers and generate the mesh.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nprogress\ncallable\nProgress callback, as for :func:generate.\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMesh\nThe mesh, in the CRS of the domain.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a layer is invalid (see :func:read_domain and :func:generate).\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair does not close.\n\n\n\n\n\n\n\nMeshSpec.replace(**changes)\nReturn a copy with some values replaced, validated like the TOML values.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\n**changes\nAny\nNew values for cell_size, transition_rows, water_removal, crs, origin or output.\n{}\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMeshSpec\nThe new spec.\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf a value is invalid."
+  },
+  {
+    "objectID": "reference/RefineResult.html",
+    "href": "reference/RefineResult.html",
+    "title": "RefineResult",
+    "section": "",
+    "text": "RefineResult(mesh, replacement_map)\nThe result of :func:refine.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nmesh\nMesh\nThe refined mesh.\n\n\nreplacement_map\nReplacementMap\nHow its cells relate to the cells of the existing mesh."
+  },
+  {
+    "objectID": "reference/RefineResult.html#attributes",
+    "href": "reference/RefineResult.html#attributes",
+    "title": "RefineResult",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\nmesh\nMesh\nThe refined mesh.\n\n\nreplacement_map\nReplacementMap\nHow its cells relate to the cells of the existing mesh."
+  },
+  {
+    "objectID": "reference/RefinementSource.html",
+    "href": "reference/RefinementSource.html",
+    "title": "RefinementSource",
+    "section": "",
+    "text": "RefinementSource(path, layer=None, level='refinement')\nA layer with refinement areas.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\nlevel\nstr or int\nColumn with the refinement level of each polygon, or one level for all."
+  },
+  {
+    "objectID": "reference/RefinementSource.html#attributes",
+    "href": "reference/RefinementSource.html#attributes",
+    "title": "RefinementSource",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\nlevel\nstr or int\nColumn with the refinement level of each polygon, or one level for all."
+  },
+  {
+    "objectID": "reference/build_parser.html",
+    "href": "reference/build_parser.html",
+    "title": "build_parser",
+    "section": "",
+    "text": "cli.build_parser()\nBuild the argument parser of the refined-quads command.\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nargparse.ArgumentParser\nParser with the generate and info subcommands."
+  },
+  {
+    "objectID": "reference/build_parser.html#returns",
+    "href": "reference/build_parser.html#returns",
+    "title": "build_parser",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nargparse.ArgumentParser\nParser with the generate and info subcommands."
+  },
+  {
+    "objectID": "reference/generate.html",
+    "href": "reference/generate.html",
+    "title": "generate",
+    "section": "",
+    "text": "generate(\n    domain,\n    *,\n    cell_size,\n    refinement_areas=(),\n    transition_rows=1,\n    water_areas=(),\n    water_removal='centre',\n    crs=None,\n    origin=None,\n    progress=None,\n)\nGenerate a refined quad mesh over a domain.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\ndomain\n(shapely.Polygon, shapely.MultiPolygon, Areas or GeoDataFrame)\nThe area the mesh covers; its CRS is the CRS of the mesh and must be projected. A lattice square is kept whole when it overlaps the domain, so cells along the outer edge may reach slightly outside it. Holes in the domain are clipped like water areas, cell by cell, with the water removal rule.\nrequired\n\n\ncell_size\nfloat\nSide length of the base cell; any positive length.\nrequired\n\n\nrefinement_areas\niterable of (shapely geometry, int), or Areas\nPolygons (pairs, or :func:read_refinement_areas) paired with the refinement level their cells must reach (1 or higher); level L gives cells of cell_size / 2**L. The highest level among the areas is the highest level of the mesh.\n()\n\n\ntransition_rows\nint or sequence of int\nRows of finer cells kept around a finer area before the mesh coarsens, per step from coarse to fine: the first value is for the step from level 0 to 1. One value per level step, or a single value for every step; each at least 1.\n1\n\n\nwater_areas\niterable of shapely geometry, Areas or GeoDataFrame\nPolygons where no cells are kept, because the 1D network carries the flow there. Giving water areas applies them.\n()\n\n\nwater_removal\n('centre', 'inside', 'touches')\nWater removal rule, applied cell by cell to the finished mesh, as clipping with MeshKernel does: a cell is removed when its circumcentre (triangle) or centroid lies in water (\"centre\", default, MeshKernel’s FACES_WITH_INCLUDED_CIRCUMCENTERS), only when it lies completely in water (\"inside\"), or as soon as it touches water (\"touches\"). The remaining small cells follow the water’s edge.\n\"centre\"\n\n\ncrs\npyproj.CRS or str or int\nCRS of input that carries none (shapely geometries). Input without CRS raises an error unless it is given; input with its own CRS is transformed to the CRS of the domain.\nNone\n\n\norigin\ntuple of float\nA point of the lattice, so that the mesh lines up with an existing mesh or raster. By default the lower-left corner of the domain rounded down to a multiple of cell_size.\nNone\n\n\nprogress\ncallable\nCalled as progress(fraction, message) while the mesh is generated, with a fraction that rises from 0 to 1 and an English message. Returning True cancels the run.\nNone\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nMesh\nThe mesh in the CRS of the domain, its faces counterclockwise, on the lattice through origin.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nIf input has no CRS and crs is not given, the CRS of the domain is geographic, the domain is empty or not polygonal, the cell size is not a positive length, a refinement area is empty or not polygonal, a level is not an integer of at least 1, the transition rows are not one integer of at least 1 per level step, a water area is empty or not polygonal, the water removal rule is unknown, the origin is not two finite numbers, or no cells are left inside the domain.\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair cannot make every internal edge FM-orthogonal; it carries the raw mesh (mesh) and the problem locations (bad_points).\n\n\n\nCancelled\nIf the progress callback returned True.\n\n\n\n\n\n\n&gt;&gt;&gt; from shapely import Point, box\n&gt;&gt;&gt; mesh = generate(\n...     box(0, 0, 400, 300),\n...     cell_size=25.0,\n...     refinement_areas=[(Point(200, 150).buffer(40), 2)],\n...     transition_rows=[1, 1],\n...     crs=\"EPSG:28992\",\n... )\n&gt;&gt;&gt; mesh.lattice.unit\n6.25"
+  },
+  {
+    "objectID": "reference/generate.html#parameters",
+    "href": "reference/generate.html#parameters",
+    "title": "generate",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\ndomain\n(shapely.Polygon, shapely.MultiPolygon, Areas or GeoDataFrame)\nThe area the mesh covers; its CRS is the CRS of the mesh and must be projected. A lattice square is kept whole when it overlaps the domain, so cells along the outer edge may reach slightly outside it. Holes in the domain are clipped like water areas, cell by cell, with the water removal rule.\nrequired\n\n\ncell_size\nfloat\nSide length of the base cell; any positive length.\nrequired\n\n\nrefinement_areas\niterable of (shapely geometry, int), or Areas\nPolygons (pairs, or :func:read_refinement_areas) paired with the refinement level their cells must reach (1 or higher); level L gives cells of cell_size / 2**L. The highest level among the areas is the highest level of the mesh.\n()\n\n\ntransition_rows\nint or sequence of int\nRows of finer cells kept around a finer area before the mesh coarsens, per step from coarse to fine: the first value is for the step from level 0 to 1. One value per level step, or a single value for every step; each at least 1.\n1\n\n\nwater_areas\niterable of shapely geometry, Areas or GeoDataFrame\nPolygons where no cells are kept, because the 1D network carries the flow there. Giving water areas applies them.\n()\n\n\nwater_removal\n('centre', 'inside', 'touches')\nWater removal rule, applied cell by cell to the finished mesh, as clipping with MeshKernel does: a cell is removed when its circumcentre (triangle) or centroid lies in water (\"centre\", default, MeshKernel’s FACES_WITH_INCLUDED_CIRCUMCENTERS), only when it lies completely in water (\"inside\"), or as soon as it touches water (\"touches\"). The remaining small cells follow the water’s edge.\n\"centre\"\n\n\ncrs\npyproj.CRS or str or int\nCRS of input that carries none (shapely geometries). Input without CRS raises an error unless it is given; input with its own CRS is transformed to the CRS of the domain.\nNone\n\n\norigin\ntuple of float\nA point of the lattice, so that the mesh lines up with an existing mesh or raster. By default the lower-left corner of the domain rounded down to a multiple of cell_size.\nNone\n\n\nprogress\ncallable\nCalled as progress(fraction, message) while the mesh is generated, with a fraction that rises from 0 to 1 and an English message. Returning True cancels the run.\nNone"
+  },
+  {
+    "objectID": "reference/generate.html#returns",
+    "href": "reference/generate.html#returns",
+    "title": "generate",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nMesh\nThe mesh in the CRS of the domain, its faces counterclockwise, on the lattice through origin."
+  },
+  {
+    "objectID": "reference/generate.html#raises",
+    "href": "reference/generate.html#raises",
+    "title": "generate",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nIf input has no CRS and crs is not given, the CRS of the domain is geographic, the domain is empty or not polygonal, the cell size is not a positive length, a refinement area is empty or not polygonal, a level is not an integer of at least 1, the transition rows are not one integer of at least 1 per level step, a water area is empty or not polygonal, the water removal rule is unknown, the origin is not two finite numbers, or no cells are left inside the domain.\n\n\n\nOrthogonalityRepairError\nIf the orthogonality repair cannot make every internal edge FM-orthogonal; it carries the raw mesh (mesh) and the problem locations (bad_points).\n\n\n\nCancelled\nIf the progress callback returned True."
+  },
+  {
+    "objectID": "reference/generate.html#examples",
+    "href": "reference/generate.html#examples",
+    "title": "generate",
+    "section": "",
+    "text": "&gt;&gt;&gt; from shapely import Point, box\n&gt;&gt;&gt; mesh = generate(\n...     box(0, 0, 400, 300),\n...     cell_size=25.0,\n...     refinement_areas=[(Point(200, 150).buffer(40), 2)],\n...     transition_rows=[1, 1],\n...     crs=\"EPSG:28992\",\n... )\n&gt;&gt;&gt; mesh.lattice.unit\n6.25"
+  },
+  {
+    "objectID": "reference/main.html",
+    "href": "reference/main.html",
+    "title": "main",
+    "section": "",
+    "text": "cli.main(argv=None)\nRun the command-line interface.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nargv\nsequence of str\nArguments without the program name; None reads them from sys.argv.\nNone\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nint\nExit code: 0 success, 1 the run failed, 2 invalid input or arguments."
+  },
+  {
+    "objectID": "reference/main.html#parameters",
+    "href": "reference/main.html#parameters",
+    "title": "main",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nargv\nsequence of str\nArguments without the program name; None reads them from sys.argv.\nNone"
+  },
+  {
+    "objectID": "reference/main.html#returns",
+    "href": "reference/main.html#returns",
+    "title": "main",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nint\nExit code: 0 success, 1 the run failed, 2 invalid input or arguments."
+  },
+  {
+    "objectID": "reference/read_refinement_areas.html",
+    "href": "reference/read_refinement_areas.html",
+    "title": "read_refinement_areas",
+    "section": "",
+    "text": "read_refinement_areas(source, layer=None, *, level, crs=None)\nRead refinement areas from a GIS layer.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nsource\n(str, path - like or GeoDataFrame)\nA GeoPackage or shapefile, or an object with geometry and crs attributes such as a GeoDataFrame.\nrequired\n\n\nlayer\nstr\nLayer name; required when the file has more than one layer.\nNone\n\n\nlevel\nstr or int\nName of the column with the refinement level of each polygon, or one level for all polygons.\nrequired\n\n\ncrs\npyproj.CRS or str or int\nCRS of a layer that has none (see :func:read_domain).\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nAreas\nThe polygons with their levels.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nAs :func:read_domain, and if the level column is missing or a level is missing, not an integer or below 1; the message names the feature."
+  },
+  {
+    "objectID": "reference/read_refinement_areas.html#parameters",
+    "href": "reference/read_refinement_areas.html#parameters",
+    "title": "read_refinement_areas",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nsource\n(str, path - like or GeoDataFrame)\nA GeoPackage or shapefile, or an object with geometry and crs attributes such as a GeoDataFrame.\nrequired\n\n\nlayer\nstr\nLayer name; required when the file has more than one layer.\nNone\n\n\nlevel\nstr or int\nName of the column with the refinement level of each polygon, or one level for all polygons.\nrequired\n\n\ncrs\npyproj.CRS or str or int\nCRS of a layer that has none (see :func:read_domain).\nNone"
+  },
+  {
+    "objectID": "reference/read_refinement_areas.html#returns",
+    "href": "reference/read_refinement_areas.html#returns",
+    "title": "read_refinement_areas",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nAreas\nThe polygons with their levels."
+  },
+  {
+    "objectID": "reference/read_refinement_areas.html#raises",
+    "href": "reference/read_refinement_areas.html#raises",
+    "title": "read_refinement_areas",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nAs :func:read_domain, and if the level column is missing or a level is missing, not an integer or below 1; the message names the feature."
+  },
+  {
+    "objectID": "reference/read_water_areas.html",
+    "href": "reference/read_water_areas.html",
+    "title": "read_water_areas",
+    "section": "",
+    "text": "read_water_areas(source, layer=None, *, crs=None)\nRead water areas from a GIS layer.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nsource\n(str, path - like or GeoDataFrame)\nA GeoPackage or shapefile, or an object with geometry and crs attributes such as a GeoDataFrame.\nrequired\n\n\nlayer\nstr\nLayer name; required when the file has more than one layer.\nNone\n\n\ncrs\npyproj.CRS or str or int\nCRS of a layer that has none (see :func:read_domain).\nNone\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nAreas\nThe polygons.\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\n\n\n\n\n\nInputError\nAs :func:read_domain."
+  },
+  {
+    "objectID": "reference/read_water_areas.html#parameters",
+    "href": "reference/read_water_areas.html#parameters",
+    "title": "read_water_areas",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nsource\n(str, path - like or GeoDataFrame)\nA GeoPackage or shapefile, or an object with geometry and crs attributes such as a GeoDataFrame.\nrequired\n\n\nlayer\nstr\nLayer name; required when the file has more than one layer.\nNone\n\n\ncrs\npyproj.CRS or str or int\nCRS of a layer that has none (see :func:read_domain).\nNone"
+  },
+  {
+    "objectID": "reference/read_water_areas.html#returns",
+    "href": "reference/read_water_areas.html#returns",
+    "title": "read_water_areas",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nAreas\nThe polygons."
+  },
+  {
+    "objectID": "reference/read_water_areas.html#raises",
+    "href": "reference/read_water_areas.html#raises",
+    "title": "read_water_areas",
+    "section": "",
+    "text": "Name\nType\nDescription\n\n\n\n\n\nInputError\nAs :func:read_domain."
+  },
+  {
+    "objectID": "reference/write_ugrid.html",
+    "href": "reference/write_ugrid.html",
+    "title": "write_ugrid",
+    "section": "",
+    "text": "write_ugrid(mesh, path)\nWrite a mesh as a UGRID-1.0 netCDF file that D-HYDRO and D-Flow FM read.\n\n\n\n\n\n\n\n\n\n\n\nName\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe mesh to write.\nrequired\n\n\npath\nstr or path - like\nOutput file; it is overwritten if it exists.\nrequired\n\n\n\n\n\n\nThe structure is that of the D-HYDRO mesh generator export: the Mesh2d topology with nodes, edges and faces, edge and face coordinates, face bounds, and node and face z set to -999 (no data) without a fill value, so readers do not mask them. A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a mesh without CRS gets no CRS variable."
+  },
+  {
+    "objectID": "reference/write_ugrid.html#parameters",
+    "href": "reference/write_ugrid.html#parameters",
+    "title": "write_ugrid",
+    "section": "",
+    "text": "Name\nType\nDescription\nDefault\n\n\n\n\nmesh\nMesh\nThe mesh to write.\nrequired\n\n\npath\nstr or path - like\nOutput file; it is overwritten if it exists.\nrequired"
+  },
+  {
+    "objectID": "reference/write_ugrid.html#notes",
+    "href": "reference/write_ugrid.html#notes",
+    "title": "write_ugrid",
+    "section": "",
+    "text": "The structure is that of the D-HYDRO mesh generator export: the Mesh2d topology with nodes, edges and faces, edge and face coordinates, face bounds, and node and face z set to -999 (no data) without a fill value, so readers do not mask them. A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a mesh without CRS gets no CRS variable."
+  }
+]
