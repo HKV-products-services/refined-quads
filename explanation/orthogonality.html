@@ -253,19 +253,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>For every internal edge (an edge of exactly two cells):</p>
 <pre class="text"><code>orth_e = | cos(angle between the edge and the line joining the two cell centres) |</code></pre>
 <p>0 is perfectly orthogonal and 1 the worst; an edge is acceptable when <code>orth_e &lt;= 0.30</code>. The centre of a triangle is its circumcentre <strong>clipped into the triangle</strong> (the RGFGRID centre), the centre of any other cell the mean of its nodes. Clipping matters: the raw circumcentre of an obtuse sliver lies far outside it, on the perpendicular bisector of every edge, which would hide exactly the slivers D-Flow FM rejects. This is the measure of the D-HYDRO mesh editor; <code>check</code> reports it per edge.</p>
-<div id="4c72b81b" class="cell" data-execution_count="1">
+<div id="d46f65ff" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shapely <span class="im">import</span> Point, box</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> check, generate</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>mesh <span class="op">=</span> generate(</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>quad_mesh <span class="op">=</span> generate(</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    box(<span class="dv">155_000</span>, <span class="dv">463_000</span>, <span class="dv">155_320</span>, <span class="dv">463_240</span>),</span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    cell_size<span class="op">=</span><span class="fl">32.0</span>,</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    refinement_areas<span class="op">=</span>[(Point(<span class="dv">155_160</span>, <span class="dv">463_120</span>).<span class="bu">buffer</span>(<span class="dv">40</span>), <span class="dv">2</span>)],</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    transition_rows<span class="op">=</span>[<span class="dv">1</span>, <span class="dv">1</span>],</span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    crs<span class="op">=</span><span class="st">"EPSG:28992"</span>,</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>report <span class="op">=</span> check(mesh)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>report <span class="op">=</span> check(quad_mesh)</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>report<span class="sc">.</span>orthogonality<span class="sc">.</span>size<span class="sc">}</span><span class="ss"> internal edges, worst orth_e = </span><span class="sc">{</span>report<span class="sc">.</span>max_orthogonality<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>653 internal edges, worst orth_e = 0.000</code></pre>
