@@ -190,6 +190,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../adr/0002-output-contract-same-cells.html">
  <span class="dropdown-text">Output contract: the same cells, compared on lattice indices</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../adr/0003-no-bed-level-in-the-net-file.html">
+ <span class="dropdown-text">No bed level in the net file; the bed level goes in as samples</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item">
@@ -273,7 +277,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="notes" class="level2 doc-section doc-section-notes">
 <h2 class="doc-section doc-section-notes anchored" data-anchor-id="notes">Notes</h2>
-<p>The structure is that of the D-HYDRO mesh generator export: the <code>Mesh2d</code> topology with nodes, edges and faces, edge and face coordinates, face bounds, and node and face z set to -999 (no data) without a fill value, so readers do not mask them. A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a mesh without CRS gets no CRS variable.</p>
+<p>The structure is that of the D-HYDRO mesh generator export: the <code>Mesh2d</code> topology with nodes, edges and faces, edge and face coordinates and face bounds. There is no bed level (<code>Mesh2d_node_z</code>, <code>Mesh2d_face_z</code>): give it to D-Flow FM as samples in the field file. A placeholder bed level would outlive a MeshKernel clip in hydrolib and break saving the model, and the D-HYDRO GUI rejects a bed level per cell once it rebuilds the cells (ADR-0003). A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a mesh without CRS gets no CRS variable.</p>
 
 
 </section>

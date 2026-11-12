@@ -190,6 +190,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../adr/0002-output-contract-same-cells.html">
  <span class="dropdown-text">Output contract: the same cells, compared on lattice indices</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../adr/0003-no-bed-level-in-the-net-file.html">
+ <span class="dropdown-text">No bed level in the net file; the bed level goes in as samples</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item">
@@ -221,7 +225,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#write-a-net-file" id="toc-write-a-net-file" class="nav-link active" data-scroll-target="#write-a-net-file">Write a net file</a></li>
-  <li><a href="#bed-levels" id="toc-bed-levels" class="nav-link" data-scroll-target="#bed-levels">Bed levels</a></li>
+  <li><a href="#bed-levels" id="toc-bed-levels" class="nav-link" data-scroll-target="#bed-levels">Bed levels</a>
+  <ul class="collapse">
+  <li><a href="#with-d-hydamo" id="toc-with-d-hydamo" class="nav-link" data-scroll-target="#with-d-hydamo">With D-HyDAMO</a></li>
+  <li><a href="#bed-level-on-the-nodes" id="toc-bed-level-on-the-nodes" class="nav-link" data-scroll-target="#bed-level-on-the-nodes">Bed level on the nodes</a></li>
+  </ul></li>
   <li><a href="#read-a-net-file" id="toc-read-a-net-file" class="nav-link" data-scroll-target="#read-a-net-file">Read a net file</a></li>
   <li><a href="#if-the-orthogonality-repair-does-not-close" id="toc-if-the-orthogonality-repair-does-not-close" class="nav-link" data-scroll-target="#if-the-orthogonality-repair-does-not-close">If the orthogonality repair does not close</a></li>
   </ul>
@@ -264,31 +272,168 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="write-a-net-file" class="level2">
 <h2 class="anchored" data-anchor-id="write-a-net-file">Write a net file</h2>
-<div id="9c3ba6b1" class="cell" data-execution_count="2">
+<div id="5c0a22e1" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> write_ugrid</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>write_ugrid(quad_mesh, workdir <span class="op">/</span> <span class="st">"mesh_net.nc"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The file is UGRID-1.0 with the structure of the D-HYDRO mesh generator export: the <code>Mesh2d</code> topology with nodes, edges and faces, edge and face coordinates and face bounds. For EPSG:28992 the CRS variable has exactly the attributes of the D-Flow FM plugin; for another projected CRS they are derived with pyproj; a mesh without CRS gets no CRS variable.</p>
-<div id="beec27af" class="cell" data-execution_count="3">
+<div id="af0a8c8a" class="cell" data-execution_count="3">
 <div class="cell-output cell-output-stdout">
-<pre><code>variables: projected_coordinate_system, Mesh2d, Mesh2d_node_x, Mesh2d_node_y, Mesh2d_node_z, Mesh2d_face_nodes, Mesh2d_edge_nodes, Mesh2d_edge_x, Mesh2d_edge_y, Mesh2d_face_x, Mesh2d_face_y, Mesh2d_face_z, Mesh2d_face_x_bnd, Mesh2d_face_y_bnd
+<pre><code>variables: projected_coordinate_system, Mesh2d, Mesh2d_node_x, Mesh2d_node_y, Mesh2d_face_nodes, Mesh2d_edge_nodes, Mesh2d_edge_x, Mesh2d_edge_y, Mesh2d_face_x, Mesh2d_face_y, Mesh2d_face_x_bnd, Mesh2d_face_y_bnd
 CRS: Amersfoort / RD New (EPSG 28992)</code></pre>
 </div>
 </div>
 </section>
 <section id="bed-levels" class="level2">
 <h2 class="anchored" data-anchor-id="bed-levels">Bed levels</h2>
-<p><code>Mesh2d_node_z</code> and <code>Mesh2d_face_z</code> hold -999 (no data), written without a fill value so that readers do not mask them. Give the bed level as samples (an xyz file) that D-HYDRO interpolates onto the cells: clipping water with MeshKernel can change cells (see <a href="../how-to/water-areas.html">Water areas</a>), so values per cell would not fit.</p>
+<p>The net file has no bed level (no <code>Mesh2d_node_z</code> or <code>Mesh2d_face_z</code>). Give the bed level to D-Flow FM as samples: a file <code>bodem_2d.xyz</code> with <code>x y z</code> on every cell centre, and two <code>[Initial]</code> blocks at the top of the field file (after <code>[General]</code>), with <code>bedLevType = 1</code> in the MDU:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode ini code-with-copy"><code class="sourceCode ini"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[Initial]</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">quantity            </span><span class="ot">=</span><span class="st"> bedlevel</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">dataFile            </span><span class="ot">=</span><span class="st"> bodem_2d.xyz</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="dt">dataFileType        </span><span class="ot">=</span><span class="st"> sample</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="dt">interpolationMethod </span><span class="ot">=</span><span class="st"> averaging</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="dt">operand             </span><span class="ot">=</span><span class="st"> O</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="dt">averagingType       </span><span class="ot">=</span><span class="st"> nearestNb</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="dt">averagingRelSize    </span><span class="ot">=</span><span class="st"> </span><span class="fl">3.0</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="dt">averagingNumMin     </span><span class="ot">=</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="dt">extrapolationMethod </span><span class="ot">=</span><span class="st"> </span><span class="dv">0</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="dt">locationType        </span><span class="ot">=</span><span class="st"> 2d</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="kw">[Initial]</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="dt">quantity            </span><span class="ot">=</span><span class="st"> bedlevel</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="dt">dataFile            </span><span class="ot">=</span><span class="st"> bodem_2d.xyz</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="dt">dataFileType        </span><span class="ot">=</span><span class="st"> sample</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="dt">interpolationMethod </span><span class="ot">=</span><span class="st"> averaging</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="dt">operand             </span><span class="ot">=</span><span class="st"> O</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="dt">averagingType       </span><span class="ot">=</span><span class="st"> nearestNb</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="dt">averagingRelSize    </span><span class="ot">=</span><span class="st"> </span><span class="fl">1.0</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="dt">averagingNumMin     </span><span class="ot">=</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="dt">extrapolationMethod </span><span class="ot">=</span><span class="st"> </span><span class="dv">0</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="dt">locationType        </span><span class="ot">=</span><span class="st"> 2d</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The first block fills every cell from the nearest sample in a wide area, also cells that have no sample of their own; the second gives each cell the value on its own centre. A bed level per cell in the net file does not work in the D-HYDRO GUI: the GUI rebuilds the cells from nodes and edges and closes small gaps, after which the list no longer fits the cells and the import fails (see <a href="../adr/0003-no-bed-level-in-the-net-file.html">ADR-0003</a>). Without samples D-Flow FM uses <code>BedLevUni</code> everywhere, without a warning.</p>
+<section id="with-d-hydamo" class="level3">
+<h3 class="anchored" data-anchor-id="with-d-hydamo">With D-HyDAMO</h3>
+<p>When the mesh is read with <code>mesh2d_from_netcdf</code> and the bed level comes from a raster (<code>mesh2d_altitude_from_raster(network, raster, "face", ...)</code>), hydrolib writes it as <code>mesh2d_face_z</code>. Turn it into samples around saving the model. Before <code>dimr.save(recurse=True)</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>m2d <span class="op">=</span> fm.geometry.netfile.network._mesh2d</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>fz <span class="op">=</span> np.asarray(m2d.mesh2d_face_z, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>ok <span class="op">=</span> np.isfinite(fz) <span class="op">&amp;</span> (fz <span class="op">&gt;</span> <span class="op">-</span><span class="dv">999</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>bodem_xyz <span class="op">=</span> np.column_stack([m2d.mesh2d_face_x, m2d.mesh2d_face_y, fz])[ok]</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>fm.geometry.bedlevtype <span class="op">=</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After saving: write the samples, remove <code>mesh2d_face_z</code> from the net file (netCDF4 cannot delete a variable, so the rest is copied), and put the two blocks above at the top of the field file:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, re</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> netCDF4</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>dfm_dir <span class="op">=</span> Path(output_path) <span class="op">/</span> <span class="st">"dflowfm"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>np.savetxt(dfm_dir <span class="op">/</span> <span class="st">"bodem_2d.xyz"</span>, bodem_xyz, fmt<span class="op">=</span><span class="st">"</span><span class="sc">%.3f</span><span class="st"> </span><span class="sc">%.3f</span><span class="st"> </span><span class="sc">%.4f</span><span class="st">"</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>net <span class="op">=</span> dfm_dir <span class="op">/</span> Path(<span class="bu">str</span>(fm.geometry.netfile.filepath)).name</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>tmp <span class="op">=</span> net.with_name(net.stem <span class="op">+</span> <span class="st">"_tmp.nc"</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> netCDF4.Dataset(net) <span class="im">as</span> src, netCDF4.Dataset(tmp, <span class="st">"w"</span>, <span class="bu">format</span><span class="op">=</span>src.file_format) <span class="im">as</span> dst:</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> ds <span class="kw">in</span> (src, dst):</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        ds.set_auto_maskandscale(<span class="va">False</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        ds.set_auto_chartostring(<span class="va">False</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    dst.setncatts(src.__dict__)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name, dim <span class="kw">in</span> src.dimensions.items():</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        dst.createDimension(name, <span class="va">None</span> <span class="cf">if</span> dim.isunlimited() <span class="cf">else</span> <span class="bu">len</span>(dim))</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name, var <span class="kw">in</span> src.variables.items():</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> name.lower() <span class="op">==</span> <span class="st">"mesh2d_face_z"</span>:</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        atts <span class="op">=</span> <span class="bu">dict</span>(var.__dict__)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        fill <span class="op">=</span> atts.pop(<span class="st">"_FillValue"</span>, <span class="va">None</span>)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        dst.createVariable(name, var.datatype, var.dimensions, fill_value<span class="op">=</span>fill).setncatts(atts)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        dst[name][...] <span class="op">=</span> var[...]</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>os.replace(tmp, net)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>block <span class="op">=</span> <span class="st">"""[Initial]</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="st">quantity            = bedlevel</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="st">dataFile            = bodem_2d.xyz</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="st">dataFileType        = sample</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="st">interpolationMethod = averaging</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="st">operand             = O</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="st">averagingType       = nearestNb</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="st">averagingRelSize    = </span><span class="sc">{}</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="st">averagingNumMin     = 1</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a><span class="st">extrapolationMethod = 0</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="st">locationType        = 2d</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>ini <span class="op">=</span> dfm_dir <span class="op">/</span> <span class="st">"fieldFile.ini"</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> ini.read_text() <span class="cf">if</span> ini.exists() <span class="cf">else</span> <span class="st">"[General]</span><span class="ch">\n</span><span class="st">fileVersion = 2.00</span><span class="ch">\n</span><span class="st">fileType    = iniField</span><span class="ch">\n\n</span><span class="st">"</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>m <span class="op">=</span> re.search(<span class="vs">r"</span><span class="dv">^</span><span class="ch">\[</span><span class="ex">(</span><span class="fu">?!</span><span class="vs">general</span><span class="ch">\]</span><span class="ex">)</span><span class="vs">"</span>, text, re.M <span class="op">|</span> re.I)  <span class="co"># the first block after [General]</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>i <span class="op">=</span> m.start() <span class="cf">if</span> m <span class="cf">else</span> <span class="bu">len</span>(text)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>ini.write_text(text[:i] <span class="op">+</span> block.<span class="bu">format</span>(<span class="fl">3.0</span>) <span class="op">+</span> block.<span class="bu">format</span>(<span class="fl">1.0</span>) <span class="op">+</span> text[i:])</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a><span class="co"># hydrolib leaves iniFieldFile out of the MDU when the model had no field file</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>mdu <span class="op">=</span> dfm_dir <span class="op">/</span> Path(<span class="bu">str</span>(fm.filepath)).name</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> mdu.read_text()</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> re.search(<span class="vs">r"</span><span class="fu">(?im)</span><span class="dv">^\s</span><span class="op">*</span><span class="vs">iniFieldFile</span><span class="dv">\s</span><span class="op">*</span><span class="vs">=</span><span class="dv">\s</span><span class="op">*</span><span class="pp">[^</span><span class="dv">\s</span><span class="pp">#]</span><span class="vs">"</span>, t):</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> re.sub(<span class="vs">r"</span><span class="fu">(?im)</span><span class="dv">^\s</span><span class="op">*</span><span class="vs">iniFieldFile</span><span class="dv">\s</span><span class="op">*</span><span class="vs">=</span><span class="dv">.</span><span class="op">*</span><span class="ch">\n</span><span class="vs">"</span>, <span class="st">""</span>, t)</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> re.sub(<span class="vs">r"</span><span class="fu">(?im)</span><span class="dv">^</span><span class="kw">(</span><span class="ch">\[</span><span class="vs">geometry</span><span class="ch">\]</span><span class="pp">[^</span><span class="ch">\n</span><span class="pp">]</span><span class="op">*</span><span class="ch">\n</span><span class="kw">)</span><span class="vs">"</span>, <span class="vs">r"</span><span class="ch">\1</span><span class="vs">iniFieldFile = fieldFile</span><span class="dv">.</span><span class="vs">ini</span><span class="ch">\n</span><span class="vs">"</span>, t, count<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>    mdu.write_text(t)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Other bed level blocks in the field file come after these two and overwrite them where they have values, for example a fixed bed level per polygon.</p>
+</section>
+<section id="bed-level-on-the-nodes" class="level3">
+<h3 class="anchored" data-anchor-id="bed-level-on-the-nodes">Bed level on the nodes</h3>
+<p>To give the bed level on the nodes instead (<code>bedLevType</code> 3 to 6), sample the raster on the nodes and write it as <code>mesh2d_node_z</code>. The nodes do not change when the GUI rebuilds the cells, so a value per node always fits; no sample file is needed. Before <code>dimr.save(recurse=True)</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> types</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># hydrolib fills NaN's (nodes on the edge, partly outside the raster) in place, but</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># pandas 3 returns read-only arrays: let the raster statistics return writable copies</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>_stats <span class="op">=</span> mesh.rasterstats.raster_stats_fine_cells</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> <span class="bu">getattr</span>(_stats, <span class="st">"_writable"</span>, <span class="va">False</span>):</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _writable_stats(<span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        df <span class="op">=</span> _stats(<span class="op">*</span>args, <span class="op">**</span>kwargs)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {c: types.SimpleNamespace(values<span class="op">=</span>df[c].to_numpy(copy<span class="op">=</span><span class="va">True</span>)) <span class="cf">for</span> c <span class="kw">in</span> df.columns}</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    _writable_stats._writable <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    mesh.rasterstats.raster_stats_fine_cells <span class="op">=</span> _writable_stats</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>network <span class="op">=</span> fm.geometry.netfile.network</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>mesh.mesh2d_altitude_from_raster(network, rasterpath, <span class="st">"node"</span>, <span class="st">"mean"</span>, fill_option<span class="op">=</span><span class="st">"nearest"</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>m2d <span class="op">=</span> network._mesh2d</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">len</span>(m2d.mesh2d_face_z) <span class="op">!=</span> <span class="bu">len</span>(m2d.mesh2d_face_x):  <span class="co"># a stale face_z breaks the save</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    m2d.mesh2d_face_z <span class="op">=</span> np.empty(<span class="dv">0</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>fm.geometry.bedlevtype <span class="op">=</span> <span class="dv">3</span>  <span class="co"># 3 mean, 4 minimum, 5 maximum of the node values</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After saving, remove <code>mesh2d_face_z</code> from the net file as above (the block up to <code>os.replace(tmp, net)</code>): hydrolib always writes it, and the GUI reads it and fails on its rebuilt cells. Leave out the <code>[Initial] bedlevel</code> blocks: they would overwrite the nodes. Tested with D-Flow FM 2026.02: every cell gets a bed level between the lowest and the highest of its node values.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Net files written by refined-quads 0.1.x
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>These contain <code>Mesh2d_node_z</code> with -999. After a clip with MeshKernel that array keeps its old length and saving fails with “shape mismatch”. Before saving, empty it: <code>if len(m2d.mesh2d_node_z) != len(m2d.mesh2d_node_x): m2d.mesh2d_node_z = np.empty(0)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>GeoTIFF fields in the D-HYDRO GUI
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The GUI only reads rasters with the extension <code>.tif</code> (or <code>.asc</code>); with <code>.tiff</code> it stops at “reading spatial operations”. D-Flow FM and DIMR read both.</p>
+</div>
+</div>
+</section>
 </section>
 <section id="read-a-net-file" class="level2">
 <h2 class="anchored" data-anchor-id="read-a-net-file">Read a net file</h2>
 <p><code>read_ugrid</code> reads only the 2D mesh of a net file; a 1D network and other variables in it are ignored. The lattice is derived from the square cells, so you can check or refine a mesh from any program:</p>
-<div id="5e087c0f" class="cell" data-execution_count="4">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> check, read_ugrid</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>quad_mesh <span class="op">=</span> read_ugrid(workdir <span class="op">/</span> <span class="st">"mesh_net.nc"</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(check(quad_mesh).summary())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="0308849c" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> check, read_ugrid</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>quad_mesh <span class="op">=</span> read_ugrid(workdir <span class="op">/</span> <span class="st">"mesh_net.nc"</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(check(quad_mesh).summary())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>lattice: origin (154976, 462976), base cell 32, 1 levels, unit 16
 nodes: 183, cells: 187
