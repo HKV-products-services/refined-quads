@@ -7,6 +7,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-12
+
 ### Added
 
 - Project skeleton: uv project, ruff, mypy, pytest, CI workflow and documentation site.

@@ -52,11 +52,13 @@ The package is under construction. The API described here is not stable yet.
 
 ## Install
 
-The package is not on PyPI yet. Install it from the repository with uv:
+Install the package from PyPI:
 
 ```bash
-uv add "refined-quads @ git+https://github.com/HKV-products-services/refined-quads"
+pip install refined-quads
 ```
+
+Or, in a uv project, use `uv add refined-quads`.
 
 Its dependencies (numpy, shapely, netCDF4, pyogrio, pyproj and meshkernel) all come as
 wheels; no separate GDAL installation is needed. On macOS the meshkernel wheel needs
