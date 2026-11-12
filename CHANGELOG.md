@@ -7,6 +7,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-12
+
 ### Changed
 
 - The examples in the README and the documentation call the result `quad_mesh` instead
