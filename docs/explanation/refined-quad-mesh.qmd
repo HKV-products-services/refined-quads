@@ -1,9 +1,13 @@
-# Refined quad meshes
+---
+title: "Refined quad meshes"
+---
 
-```python exec="on" session="concepts"
+```{python}
+#| echo: false
+#| output: false
 import sys
 
-sys.path.insert(0, "docs/snippets")
+sys.path.insert(0, "snippets")
 from plot_mesh import svg_row
 from shapely import box
 
@@ -35,7 +39,9 @@ Around a refinement area the mesh does not jump from fine to coarse at once. **T
 rows** set, per step from coarse to fine, how many rows of finer cells surround the
 finer area before the mesh coarsens:
 
-```python exec="on" html="on" session="concepts"
+```{python}
+#| echo: false
+#| output: asis
 area = box(155_100, 463_100, 155_140, 463_140)
 panels = []
 for rows in ([1, 1], [2, 2]):
@@ -62,5 +68,5 @@ are no hanging nodes (nodes in the middle of another cell's edge).
 The **domain** encloses the mesh. A lattice square that overlaps it is kept whole, so the
 outer edge follows the lattice rather than the polygon exactly. **Water areas** and holes
 in the domain are clipped out of the finished mesh cell by cell (see
-[Water areas](../how-to/water-areas.md)); after that some lattice squares are filled only
+[Water areas](../how-to/water-areas.qmd)); after that some lattice squares are filled only
 partly, which is how the remaining cells follow the water's edge.

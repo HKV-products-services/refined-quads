@@ -1,9 +1,13 @@
-# Run from a TOML file
+---
+title: "Run from a TOML file"
+---
 
 A TOML file records a run, so you can keep it in Git and repeat it exactly. The same
 file works on the command line and in Python (`MeshSpec`).
 
-```python exec="on" session="cli"
+```{python}
+#| echo: false
+#| output: false
 import sys
 import tempfile
 from pathlib import Path
@@ -59,8 +63,10 @@ layer = "water"
 
 ## The file
 
-```python exec="on" result="toml" session="cli"
-print(run_toml, end="")
+```{python}
+#| echo: false
+#| output: asis
+print(f"```toml\n{run_toml}```")
 ```
 
 Paths are relative to the TOML file. Other keys: `crs` (for layers without CRS),
@@ -73,7 +79,8 @@ tables. An unknown key or an invalid value is an error that names the key and th
 refined-quads generate run.toml
 ```
 
-```python exec="on" result="text" session="cli"
+```{python}
+#| echo: false
 from refined_quads.cli import main
 
 main(["generate", str(workdir / "run.toml")])
@@ -96,13 +103,14 @@ any UGRID file, also a D-HYDRO net file with a 1D network:
 refined-quads info mesh_net.nc
 ```
 
-```python exec="on" result="text" session="cli"
+```{python}
+#| echo: false
 main(["info", str(workdir / "mesh_net.nc")])
 ```
 
 ## The same in Python
 
-```python exec="on" source="above" result="text" session="cli"
+```{python}
 from refined_quads import MeshSpec
 
 spec = MeshSpec.from_toml(workdir / "run.toml")

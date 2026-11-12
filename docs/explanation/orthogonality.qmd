@@ -1,4 +1,6 @@
-# FM orthogonality
+---
+title: "FM orthogonality"
+---
 
 D-Flow FM computes the flow between two cells along the line that joins their centres.
 That works well when the line crosses their shared edge at a right angle; D-Flow FM
@@ -19,7 +21,7 @@ circumcentre of an obtuse sliver lies far outside it, on the perpendicular bisec
 every edge, which would hide exactly the slivers D-Flow FM rejects. This is the measure
 of the D-HYDRO mesh editor; `check` reports it per edge.
 
-```python exec="on" source="above" result="text" session="orth"
+```{python}
 from shapely import Point, box
 
 from refined_quads import check, generate

@@ -1,17 +1,22 @@
-# refined-quads
+---
+title: "refined-quads"
+---
 
 `refined-quads` generates and refines *refined quad meshes* for D-Flow FM: axis-aligned
 squares on a fixed lattice, locally refined by repeated halving, with transition cells
 only where refinement levels meet.
 
-```python exec="on" session="home"
+```{python}
+#| echo: false
+#| output: false
 import sys
 
-sys.path.insert(0, "docs/snippets")
+sys.path.insert(0, "snippets")
 from plot_mesh import svg
 ```
 
-```python exec="on" source="above" session="home"
+```{python}
+#| output: false
 from shapely import Point, box
 
 from refined_quads import generate
@@ -25,12 +30,15 @@ mesh = generate(
 )
 ```
 
-```python exec="on" html="on" session="home"
+```{python}
+#| echo: false
+#| output: asis
 print(svg(mesh, areas=[Point(155_250, 463_240).buffer(70)]))
 ```
 
-!!! warning "Pre-alpha"
-    The package is under construction. The API described here is not stable yet.
+::: {.callout-warning title="Pre-alpha"}
+The package is under construction. The API described here is not stable yet.
+:::
 
 ## What it does
 
@@ -56,9 +64,9 @@ OpenMP from Homebrew (`brew install libomp`); the package is tested on Windows a
 
 ## Where to go next
 
-- [Your first mesh](tutorial/first-mesh.md) walks through generating, checking and
+- [Your first mesh](tutorial/first-mesh.qmd) walks through generating, checking and
   writing a mesh.
 - The **how-to guides** cover GIS layers, TOML files and the command line, water areas,
   refining and D-HYDRO.
 - The **explanation** pages describe the concepts and the decisions behind the design.
-- The [API reference](reference/api.md) documents every public function.
+- The [API reference](reference/index.qmd) documents every public function.

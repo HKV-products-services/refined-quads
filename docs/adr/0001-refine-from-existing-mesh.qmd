@@ -1,4 +1,6 @@
-# Refine starts from the existing mesh; generate is refine of an empty base grid
+---
+title: "Refine starts from the existing mesh; generate is refine of an empty base grid"
+---
 
 Refining an existing refined quad mesh rebuilds the quadtree from the mesh's own
 cells (squares as leaves, transition triangles as parts of their parent square) on

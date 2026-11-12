@@ -1,4 +1,6 @@
-# Output contract: the same cells, compared on lattice indices
+---
+title: "Output contract: the same cells, compared on lattice indices"
+---
 
 Two meshes are "the same" when they contain the same set of cells, with every node
 compared as an integer lattice index (in units of base cell / 2^L from the lattice

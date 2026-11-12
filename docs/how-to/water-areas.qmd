@@ -1,13 +1,17 @@
-# Water areas
+---
+title: "Water areas"
+---
 
 Water areas are where the 1D network carries the flow, so no 2D cells are kept there.
 Typically you refine along a watercourse and then cut the watercourse out: the small
 cells that remain follow its edge as closely as possible.
 
-```python exec="on" session="water"
+```{python}
+#| echo: false
+#| output: false
 import sys
 
-sys.path.insert(0, "docs/snippets")
+sys.path.insert(0, "snippets")
 from plot_mesh import svg_row
 from shapely import box
 from shapely.affinity import rotate
@@ -31,7 +35,8 @@ removed. The **water removal rule** decides which cells go:
 | `"inside"` | it lies completely in water | `INSIDE_NOT_INTERSECTED` |
 | `"touches"` | it touches water | `INSIDE_AND_INTERSECTED` |
 
-```python exec="on" source="above" session="water"
+```{python}
+#| output: false
 meshes = {
     rule: generate(
         domain,
@@ -46,7 +51,9 @@ meshes = {
 }
 ```
 
-```python exec="on" html="on" session="water"
+```{python}
+#| echo: false
+#| output: asis
 print(
     svg_row(
         [
@@ -57,12 +64,13 @@ print(
 )
 ```
 
-!!! note "What MeshKernel does"
-    MeshKernel keeps nodes and edges and derives the cells from them again. A single
-    removed cell whose edges all stay (its neighbours all remain) therefore comes back,
-    and a hole of three or four nodes becomes a cell again. That is accepted here,
-    because it is what the models are built with; give bed levels as samples that are
-    interpolated onto the cells rather than as values per cell.
+::: {.callout-note title="What MeshKernel does"}
+MeshKernel keeps nodes and edges and derives the cells from them again. A single
+removed cell whose edges all stay (its neighbours all remain) therefore comes back,
+and a hole of three or four nodes becomes a cell again. That is accepted here,
+because it is what the models are built with; give bed levels as samples that are
+interpolated onto the cells rather than as values per cell.
+:::
 
 ## Holes in the domain
 

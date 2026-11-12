@@ -1,6 +1,10 @@
-# Use the mesh in D-HYDRO
+---
+title: "Use the mesh in D-HYDRO"
+---
 
-```python exec="on" session="dhydro"
+```{python}
+#| echo: false
+#| output: false
 import tempfile
 from pathlib import Path
 
@@ -21,7 +25,8 @@ mesh = generate(
 
 ## Write a net file
 
-```python exec="on" source="above" session="dhydro"
+```{python}
+#| output: false
 from refined_quads import write_ugrid
 
 write_ugrid(mesh, workdir / "mesh_net.nc")
@@ -33,7 +38,8 @@ For EPSG:28992 the CRS variable has exactly the attributes of the D-Flow FM plug
 another projected CRS they are derived with pyproj; a mesh without CRS gets no CRS
 variable.
 
-```python exec="on" result="text" session="dhydro"
+```{python}
+#| echo: false
 with netCDF4.Dataset(workdir / "mesh_net.nc") as ds:
     crs = ds["projected_coordinate_system"]
     print("variables:", ", ".join(ds.variables))
@@ -45,7 +51,7 @@ with netCDF4.Dataset(workdir / "mesh_net.nc") as ds:
 `Mesh2d_node_z` and `Mesh2d_face_z` hold -999 (no data), written without a fill value so
 that readers do not mask them. Give the bed level as samples (an xyz file) that D-HYDRO
 interpolates onto the cells: clipping water with MeshKernel can change cells (see
-[Water areas](water-areas.md)), so values per cell would not fit.
+[Water areas](water-areas.qmd)), so values per cell would not fit.
 
 ## Read a net file
 
@@ -53,7 +59,7 @@ interpolates onto the cells: clipping water with MeshKernel can change cells (se
 are ignored. The lattice is derived from the square cells, so you can check or refine a
 mesh from any program:
 
-```python exec="on" source="above" result="text" session="dhydro"
+```{python}
 from refined_quads import check, read_ugrid
 
 mesh = read_ugrid(workdir / "mesh_net.nc")

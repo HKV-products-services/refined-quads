@@ -1,4 +1,6 @@
-# Why refine starts from the mesh
+---
+title: "Why refine starts from the mesh"
+---
 
 Refining used to mean generating the mesh twice with the original input, once with and
 once without the new areas, and splicing in the difference. That needs the original
@@ -6,7 +8,7 @@ input, works only for meshes this generator made on a lattice through a multiple
 base cell, and fails for models made before 24-10-2026, when the generator still rounded
 the base cell down to a power of 2 (25 m became 16 m).
 
-`refine` starts from the mesh itself instead ([ADR-0001](../adr/0001-refine-from-existing-mesh.md)):
+`refine` starts from the mesh itself instead ([ADR-0001](../adr/0001-refine-from-existing-mesh.qmd)):
 
 1. **Recognise** the lattice and the lattice squares from the cells: square cells are
    their own lattice square; other cells are grouped into the square they fill together.

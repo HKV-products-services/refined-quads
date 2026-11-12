@@ -1,10 +1,14 @@
-# Read layers from a GeoPackage
+---
+title: "Read layers from a GeoPackage"
+---
 
 Most model input lives in GIS layers. `read_domain`, `read_refinement_areas` and
 `read_water_areas` read a layer of a GeoPackage or shapefile (with pyogrio; geopandas is
 not needed) and keep its CRS.
 
-```python exec="on" session="gis"
+```{python}
+#| echo: false
+#| output: false
 import sys
 import tempfile
 from pathlib import Path
@@ -14,7 +18,7 @@ import pyogrio.raw
 import shapely
 from shapely import Point, box
 
-sys.path.insert(0, "docs/snippets")
+sys.path.insert(0, "snippets")
 from plot_mesh import svg
 
 workdir = Path(tempfile.mkdtemp())
@@ -46,14 +50,15 @@ write("water", [Point(155_520, 463_330).buffer(35)])
 
 The example GeoPackage `model.gpkg` has three layers:
 
-```python exec="on" result="text" session="gis"
+```{python}
+#| echo: false
 for name, kind in pyogrio.list_layers(gpkg):
     print(f"{name:12s} {kind}")
 ```
 
 ## Read and generate
 
-```python exec="on" source="above" result="text" session="gis"
+```{python}
 from refined_quads import (
     generate,
     read_domain,
@@ -75,7 +80,9 @@ mesh = generate(
 print(mesh)
 ```
 
-```python exec="on" html="on" session="gis"
+```{python}
+#| echo: false
+#| output: asis
 print(svg(mesh, areas=list(areas.geometries), water=list(water.geometries)))
 ```
 
@@ -93,4 +100,4 @@ print(svg(mesh, areas=list(areas.geometries), water=list(water.geometries)))
 - **GeoDataFrame.** Instead of a path you may pass a GeoDataFrame (or any object with
   `geometry` and `crs` attributes): `read_refinement_areas(frame, level="refinement")`.
 - **Shapely geometries.** Plain shapely geometries have no CRS: pass `crs=` to
-  `generate` (see the [tutorial](../tutorial/first-mesh.md)).
+  `generate` (see the [tutorial](../tutorial/first-mesh.qmd)).
