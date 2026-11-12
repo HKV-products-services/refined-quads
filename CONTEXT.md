@@ -76,5 +76,13 @@ _Avoid_: water polygon, exclusion area, clip area
 The test that decides whether a cell touching a water area (or a hole in the domain)
 is removed from the finished mesh: by its circumcentre, only when fully inside, or as
 soon as it touches; applied cell by cell with MeshKernel, as in the model workflow, so
-the remaining small cells follow the water's edge.
+the remaining small cells follow the water's edge. Exception: cells whose removal would
+leave a hole that MeshKernel makes one cell of (a ring of at most six nodes) stay
+(ADR-0004).
 _Avoid_: delete option, clip method
+
+**Closable hole**:
+A hole in the mesh bounded by a ring of at most six nodes. MeshKernel makes one cell of
+it when it builds the cells from nodes and edges, as hydrolib and the D-HYDRO GUI do;
+`generate` and `refine` do not leave such holes, `check` reports them.
+_Avoid_: gap cell, synthetic face

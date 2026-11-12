@@ -8,3 +8,4 @@ result of a real trade-off.
 - [0001 — Refine starts from the existing mesh](0001-refine-from-existing-mesh.qmd)
 - [0002 — Output contract: the same cells, compared on lattice indices](0002-output-contract-same-cells.qmd)
 - [0003 — No bed level in the net file; the bed level goes in as samples](0003-no-bed-level-in-the-net-file.qmd)
+- [0004 — No holes that MeshKernel closes: small water areas keep their cells](0004-no-holes-meshkernel-closes.qmd)

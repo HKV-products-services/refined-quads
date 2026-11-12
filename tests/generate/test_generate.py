@@ -4,6 +4,7 @@ import pytest
 from shapely import LineString, MultiPolygon, Point, Polygon, box
 
 from golden.compare import assert_same_cells
+from golden.holes import assert_master_with_holes_filled, closable_holes
 from golden.masters import MASTERS_DIR, load_master
 from golden.scenarios import SCENARIOS
 from handmade import generate_rd
@@ -24,10 +25,31 @@ def test_generate_gives_the_cells_of_the_golden_master(scenario):
         water_removal=scenario.water_removal,
     )
 
-    assert_same_cells(mesh, load_master(MASTERS_DIR / f"{scenario.name}.npz").to_mesh())
+    master = load_master(MASTERS_DIR / f"{scenario.name}.npz").to_mesh()
+    if closable_holes(master):
+        # Issue 20 / ADR-0004: holes MeshKernel would close keep their cells.
+        assert_master_with_holes_filled(mesh, master)
+    else:
+        assert_same_cells(mesh, master)
     report = check(mesh)
     assert report.is_valid, report.summary()
     assert mesh.lattice.levels == scenario.levels
+
+
+@pytest.mark.parametrize("scenario", SCENARIOS, ids=[s.name for s in SCENARIOS])
+def test_meshkernel_finds_exactly_the_cells_of_the_mesh(scenario):
+    # hydrolib and the D-HYDRO GUI rebuild the cells from nodes and edges with
+    # MeshKernel; it must not find a cell the mesh does not have (issue 20).
+    mesh = generate_rd(
+        scenario.domain,
+        cell_size=scenario.cell_size,
+        refinement_areas=scenario.refinement_areas,
+        transition_rows=scenario.transition_rows,
+        water_areas=scenario.water_areas,
+        water_removal=scenario.water_removal,
+    )
+
+    assert closable_holes(mesh) == []
 
 
 def test_level_five_with_24_m_gives_cells_of_0_75_m():

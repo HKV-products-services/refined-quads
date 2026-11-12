@@ -15,6 +15,7 @@ import json
 import pytest
 
 from golden.compare import assert_same_cells
+from golden.holes import assert_master_with_holes_filled, closable_holes
 from golden.masters import MASTERS_DIR, RUNTIME_BASELINE, load_master
 from golden.scenarios import SCENARIOS_BY_NAME
 from handmade import generate_rd
@@ -45,4 +46,8 @@ def test_generate(benchmark, name):
         warmup_rounds=1,
     )
 
-    assert_same_cells(mesh, load_master(MASTERS_DIR / f"{name}.npz").to_mesh())
+    master = load_master(MASTERS_DIR / f"{name}.npz").to_mesh()
+    if closable_holes(master):  # issue 20 / ADR-0004
+        assert_master_with_holes_filled(mesh, master)
+    else:
+        assert_same_cells(mesh, master)

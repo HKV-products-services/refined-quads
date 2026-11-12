@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
 
+from golden.holes import closable_holes
+from golden.masters import MASTERS_DIR, load_master
+from golden.scenarios import SCENARIOS
 from handmade import CLEAN, FINE_RIGHT, ORIGIN, mesh_from_cells
 from refined_quads import Mesh, check
 
@@ -171,3 +174,26 @@ def test_partly_filled_lattice_square_is_recognised():
 
     assert report.cells_per_level == {0: 2, 1: 4}
     assert report.is_valid
+
+
+@pytest.mark.parametrize("name", [s.name for s in SCENARIOS])
+def test_check_reports_the_holes_meshkernel_closes(name):
+    # Issue 20 / ADR-0004: compared with a full MeshKernel round trip (golden.holes).
+    master = load_master(MASTERS_DIR / f"{name}.npz").to_mesh()
+
+    report = check(master)
+
+    expected = closable_holes(master)
+    assert len(report.closable_holes) == len(expected)
+    centres = {tuple(np.round(p.centroid.coords[0], 6)) for p in expected}
+    assert {tuple(np.round(c, 6)) for c in report.closable_holes} == centres
+
+
+def test_holes_meshkernel_closes_are_information_only():
+    master = load_master(MASTERS_DIR / "many_small_water_areas.npz").to_mesh()
+
+    report = check(master)
+
+    assert len(report.closable_holes) == 17
+    assert report.is_valid
+    assert "holes MeshKernel closes (information): 17" in report.summary()

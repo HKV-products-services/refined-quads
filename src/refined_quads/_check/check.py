@@ -5,11 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+import shapely
 from numpy.typing import NDArray
 
 from refined_quads._common.recognise import lattice_squares, twice_signed_areas
 from refined_quads._common.topology import hanging_nodes, unique_edges
 from refined_quads._generate.balance import balance_violations
+from refined_quads._generate.clip import closable_holes
 from refined_quads._generate.orthogonality import MAX_FM_ORTHOGONALITY, edge_orthogonality
 from refined_quads.mesh import Lattice, Mesh
 
@@ -61,6 +63,12 @@ class MeshReport:
         Cells that are neither a lattice square nor part of a group of transition
         cells that fills one; their level is unknown, so they are left out of
         ``cells_per_level`` and the 2:1 check.
+    closable_holes : numpy.ndarray of float, shape (k, 2)
+        Centres of holes that MeshKernel makes a cell of when it builds the cells from
+        nodes and edges, as hydrolib (``mesh2d_from_netcdf``) and the D-HYDRO GUI do: a
+        ring of at most six nodes around no cell. Information only: a hole of four
+        nodes becomes an ordinary cell, but one of five or six nodes can be a cell
+        D-Flow FM rejects as not orthogonal (ADR-0004).
     """
 
     lattice: Lattice
@@ -78,6 +86,7 @@ class MeshReport:
     max_allowed_orthogonality: float
     clockwise_cells: NDArray[np.int64]
     unrecognised_cells: NDArray[np.int64]
+    closable_holes: NDArray[np.float64]
 
     @property
     def max_orthogonality(self) -> float:
@@ -124,6 +133,7 @@ class MeshReport:
             f"{len(self.non_orthogonal_edges)} (worst {self.max_orthogonality:.3f})",
             f"clockwise cells: {len(self.clockwise_cells)}",
             f"unrecognised cells: {len(self.unrecognised_cells)}",
+            f"holes MeshKernel closes (information): {len(self.closable_holes)}",
             f"valid: {'yes' if self.is_valid else 'no'}",
         ]
         return "\n".join(lines)
@@ -193,4 +203,38 @@ def check(mesh: Mesh) -> MeshReport:
         max_allowed_orthogonality=MAX_FM_ORTHOGONALITY,
         clockwise_cells=np.flatnonzero(twice_signed_areas(indices, faces) <= 0),
         unrecognised_cells=np.flatnonzero(squares.face_level < 0),
+        closable_holes=_closable_hole_centres(mesh.nodes, faces),
     )
+
+
+def _closable_hole_centres(
+    nodes: NDArray[np.float64], faces: NDArray[np.int64]
+) -> NDArray[np.float64]:
+    """Centres of the holes MeshKernel closes when it builds the cells from the edges.
+
+    A hole is bounded by edges of one cell each, so only the cells with such an edge go
+    to MeshKernel. A ring it finds counts when it overlaps no cell of the mesh (a ring
+    around cells left out of that selection does).
+    """
+    cells = [[int(v) for v in f[f >= 0]] for f in faces]
+    count: dict[tuple[int, int], int] = {}
+    for c in cells:
+        for k in range(len(c)):
+            edge = (min(c[k], c[(k + 1) % len(c)]), max(c[k], c[(k + 1) % len(c)]))
+            count[edge] = count.get(edge, 0) + 1
+    border = [
+        c for c in cells
+        if any(count[(min(c[k], c[(k + 1) % len(c)]), max(c[k], c[(k + 1) % len(c)]))] == 1
+               for k in range(len(c)))
+    ]  # fmt: skip
+    rings = closable_holes(nodes, border, known={tuple(sorted(c)) for c in cells})
+    if not rings:
+        return np.empty((0, 2))
+    polygons = [shapely.Polygon(nodes[c]) for c in cells]
+    tree = shapely.STRtree(polygons)
+    holes = [
+        ring for ring in rings
+        if not any(polygons[i].intersection(ring).area > 1e-9 * ring.area
+                   for i in tree.query(ring))
+    ]  # fmt: skip
+    return np.array([ring.centroid.coords[0] for ring in holes]).reshape(-1, 2)

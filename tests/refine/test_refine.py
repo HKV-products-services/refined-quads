@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 from shapely import Point, box
 
 from golden.compare import assert_same_cells
+from golden.holes import closable_holes
 from golden.scenarios import SCENARIOS_BY_NAME, X0, Y0
 from handmade import CLEAN, RD, generate_rd, mesh_from_cells
 from refined_quads import (
@@ -239,3 +240,21 @@ def test_areas_with_a_crs_need_a_mesh_with_a_crs():
 
     with pytest.raises(InputError, match="has no CRS"):
         refine(mesh, Areas((box(1000, 2000, 1001, 2001),), RD, (1,)))
+
+
+def test_refine_keeps_the_cells_of_a_small_water_area_meshkernel_would_close():
+    # Issue 20 / ADR-0004: water over two adjacent 8 m cells would leave a hole of six
+    # nodes that hydrolib and the D-HYDRO GUI make one (hexagonal) cell of.
+    mesh = generate_rd(box(X0, Y0, X0 + 320, Y0 + 256), cell_size=32.0)
+    ox, oy = mesh.lattice.origin
+    area = box(ox + 96, oy + 64, ox + 224, oy + 192)
+    water = box(ox + 127.5, oy + 103.5, ox + 144.5, oy + 112.5)
+
+    result = refine_rd(mesh, [(area, 2)], transition_rows=1, water_areas=[water],
+                       water_removal="inside")  # fmt: skip
+
+    assert closable_holes(result.mesh) == []
+    corners = {(ox + x, oy + y) for x in (128, 136, 144) for y in (104, 112)}
+    kept = [i for i in range(len(result.mesh.faces)) if cell_points(result.mesh, i) <= corners]
+    assert len(kept) == 2
+    assert check(result.mesh).is_valid

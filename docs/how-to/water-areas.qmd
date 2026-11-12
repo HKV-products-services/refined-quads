@@ -72,6 +72,17 @@ because it is what the models are built with; give bed levels as samples that ar
 interpolated onto the cells rather than as values per cell.
 :::
 
+## Small water areas stay cells
+
+A water area of one or two cells would leave a small hole: a ring of at most six nodes.
+Every program that builds the cells from nodes and edges with MeshKernel — hydrolib's
+`mesh2d_from_netcdf`, the D-HYDRO GUI — makes one cell of such a hole, often a hexagon
+that D-Flow FM rejects as "network is not orthogonal". `generate` and `refine`
+therefore keep the cells of such a hole: they stay ordinary lattice cells, so every
+program sees the same mesh (see [ADR-0004](../adr/0004-no-holes-meshkernel-closes.qmd)).
+Larger water areas leave larger holes, which stay open. `check` reports holes that
+MeshKernel would close, also in meshes from other programs.
+
 ## Holes in the domain
 
 A hole in the domain is clipped the same way, with the same rule. An island inside a hole

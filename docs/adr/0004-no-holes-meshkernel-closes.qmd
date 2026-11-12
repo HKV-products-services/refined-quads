@@ -1,0 +1,43 @@
+---
+title: "No holes that MeshKernel closes: small water areas keep their cells"
+---
+
+`generate` and `refine` do not leave a hole in the mesh that MeshKernel makes a cell of
+when it builds the cells from nodes and edges. Where removing cells for a water area
+(or a hole in the domain) would leave such a hole — a ring of at most six nodes — those
+cells stay, as the lattice cells they were. Where MeshKernel's clip itself returns such
+a region as one cell, it is replaced by the original cells.
+
+hydrolib (`mesh2d_from_netcdf`) and the D-HYDRO GUI give MeshKernel only nodes and
+edges and let it find the cells. A small hole then becomes one cell, often a hexagon.
+Found on 2026-11-12 (hydrolib-core 1.0.1, MeshKernel 8.3.0, D-Flow FM 2026.02): in the
+golden-master scenario with many small water areas hydrolib added 17 such cells, and
+D-Flow FM rejected the saved net file with "network is not orthogonal". On the Geul
+input with its clip polygon as water areas, MeshKernel's clip returned two hexagons
+itself, each with two non-orthogonal edges.
+
+## Considered Options
+
+- **Remove more cells**, until the hole has more than six nodes. Rejected: it loses 2D
+  cells around every small water area.
+- **Take the cells as MeshKernel builds them.** Rejected: the hexagons are what D-Flow FM
+  rejects.
+- **Leave it and document it.** Rejected: the hydrolib route then fails in D-Flow FM.
+
+## Consequences
+
+- An intended output change (ADR-0002): in the golden-master scenarios
+  `many_small_water_areas` and `head_to_toe_boxes` the mesh is the master plus the
+  cells that fill its 17 and 1 holes. The masters themselves are unchanged; the test
+  determines the holes of the master independently with MeshKernel.
+- A water area of one or two cells has no effect on the mesh; the 1D network still
+  carries the flow there.
+- Runtime: about 4 s on the Geul input (295,000 cells), where `generate` with water
+  areas takes over 300 s, nearly all in MeshKernel's clip.
+- `check` reports closable holes as information, not as a reason for `is_valid` to be
+  false: a hole of four nodes becomes an ordinary square and D-Flow FM accepts it
+  (the Geul model of 2026-11-09 has one).
+- Only holes made by clipping are handled. A hole from the outline of the domain
+  itself stays: on the Geul input the domain has an inlet narrower than one cell, so
+  one 8 m lattice square lies outside the domain with cells on all sides. MeshKernel
+  makes it a square cell; D-Flow FM accepts that, and `check` reports it.

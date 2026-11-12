@@ -7,6 +7,21 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+### Changed
+
+- Intended output change (ADR-0004): `generate` and `refine` no longer leave a hole
+  that MeshKernel makes one cell of (a ring of at most six nodes). A water area that
+  would remove only one or two cells keeps them; a cell that MeshKernel's clip merges
+  from removed cells is replaced by those cells. hydrolib's `mesh2d_from_netcdf` and the
+  D-HYDRO GUI made such holes into (often hexagonal) cells that D-Flow FM rejected as
+  not orthogonal. The golden-master scenarios `many_small_water_areas` (17 holes) and
+  `head_to_toe_boxes` (1 hole) change; the others give the same cells.
+
+### Added
+
+- `MeshReport.closable_holes`: the holes MeshKernel would close, as information, also in
+  meshes from other programs; shown in `summary()` and `refined-quads info`.
+
 ## [0.2.0] - 2026-11-12
 
 ### Changed
