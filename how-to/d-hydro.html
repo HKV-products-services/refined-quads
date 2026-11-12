@@ -229,6 +229,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#with-d-hydamo" id="toc-with-d-hydamo" class="nav-link" data-scroll-target="#with-d-hydamo">With D-HyDAMO</a></li>
   <li><a href="#bed-level-on-the-nodes" id="toc-bed-level-on-the-nodes" class="nav-link" data-scroll-target="#bed-level-on-the-nodes">Bed level on the nodes</a></li>
+  <li><a href="#which-bedlevtype" id="toc-which-bedlevtype" class="nav-link" data-scroll-target="#which-bedlevtype">Which bedLevType</a></li>
   </ul></li>
   <li><a href="#read-a-net-file" id="toc-read-a-net-file" class="nav-link" data-scroll-target="#read-a-net-file">Read a net file</a></li>
   <li><a href="#if-the-orthogonality-repair-does-not-close" id="toc-if-the-orthogonality-repair-does-not-close" class="nav-link" data-scroll-target="#if-the-orthogonality-repair-does-not-close">If the orthogonality repair does not close</a></li>
@@ -272,13 +273,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="write-a-net-file" class="level2">
 <h2 class="anchored" data-anchor-id="write-a-net-file">Write a net file</h2>
-<div id="2288aaab" class="cell" data-execution_count="2">
+<div id="6e247a41" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> write_ugrid</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>write_ugrid(quad_mesh, workdir <span class="op">/</span> <span class="st">"mesh_net.nc"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The file is UGRID-1.0 with the structure of the D-HYDRO mesh generator export: the <code>Mesh2d</code> topology with nodes, edges and faces, edge and face coordinates and face bounds. For EPSG:28992 the CRS variable has exactly the attributes of the D-Flow FM plugin; for another projected CRS they are derived with pyproj; a mesh without CRS gets no CRS variable.</p>
-<div id="3a96308e" class="cell" data-execution_count="3">
+<div id="e7727e55" class="cell" data-execution_count="3">
 <div class="cell-output cell-output-stdout">
 <pre><code>variables: projected_coordinate_system, Mesh2d, Mesh2d_node_x, Mesh2d_node_y, Mesh2d_face_nodes, Mesh2d_edge_nodes, Mesh2d_edge_x, Mesh2d_edge_y, Mesh2d_face_x, Mesh2d_face_y, Mesh2d_face_x_bnd, Mesh2d_face_y_bnd
 CRS: Amersfoort / RD New (EPSG 28992)</code></pre>
@@ -398,6 +399,65 @@ CRS: Amersfoort / RD New (EPSG 28992)</code></pre>
 <span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    m2d.mesh2d_face_z <span class="op">=</span> np.empty(<span class="dv">0</span>)</span>
 <span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>fm.geometry.bedlevtype <span class="op">=</span> <span class="dv">3</span>  <span class="co"># 3 mean, 4 minimum, 5 maximum of the node values</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>After saving, remove <code>mesh2d_face_z</code> from the net file as above (the block up to <code>os.replace(tmp, net)</code>): hydrolib always writes it, and the GUI reads it and fails on its rebuilt cells. Leave out the <code>[Initial] bedlevel</code> blocks: they would overwrite the nodes. Tested with D-Flow FM 2026.02: every cell gets a bed level between the lowest and the highest of its node values.</p>
+</section>
+<section id="which-bedlevtype" class="level3">
+<h3 class="anchored" data-anchor-id="which-bedlevtype">Which bedLevType</h3>
+<p>“Face” means two opposite things here. In the net file (UGRID 1.0) a face is a <strong>cell</strong>: <code>mesh2d_face_z</code> is a level per cell. In the description of <code>bedLevType</code> in the MDU, “at face” means at a <strong>cell side</strong> through which water flows (a flow link or u-point), the finite-volume meaning. This table uses cell, cell side and node only.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><code>bedLevType</code></th>
+<th>Input</th>
+<th>Level of a cell side</th>
+<th>Bed level of the cell</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>per cell: samples (or <code>mesh2d_face_z</code>)</td>
+<td>not measured (MDU: the higher of the two cells)</td>
+<td>the cell’s own value</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>per cell side: samples</td>
+<td>the sample</td>
+<td>not measured</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>per node: <code>mesh2d_node_z</code></td>
+<td>mean of its two nodes</td>
+<td>the lowest of its cell sides</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>per node</td>
+<td>the lower of its two nodes</td>
+<td>the lowest of its cell sides, so its lowest node</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>per node</td>
+<td>the higher of its two nodes</td>
+<td>the lowest of its cell sides</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>per node</td>
+<td>not measured</td>
+<td>mean of its nodes</td>
+</tr>
+</tbody>
+</table>
+<p>Only cell sides shared with another cell count; sides on the edge of the mesh do not. The cell formulas were measured with D-Flow FM 2026.02 on a mesh of 849 cells: each matches the bed level D-Flow FM uses in every cell to 0.1 mm. In short: 1 gives each cell exactly its own value; 6 the mean of its nodes; 4 its lowest node; with 3 and 5 one low cell side makes the whole cell low.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -429,7 +489,7 @@ CRS: Amersfoort / RD New (EPSG 28992)</code></pre>
 <section id="read-a-net-file" class="level2">
 <h2 class="anchored" data-anchor-id="read-a-net-file">Read a net file</h2>
 <p><code>read_ugrid</code> reads only the 2D mesh of a net file; a 1D network and other variables in it are ignored. The lattice is derived from the square cells, so you can check or refine a mesh from any program:</p>
-<div id="a8e0fc1e" class="cell" data-execution_count="4">
+<div id="a853591c" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> check, read_ugrid</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>quad_mesh <span class="op">=</span> read_ugrid(workdir <span class="op">/</span> <span class="st">"mesh_net.nc"</span>)</span>
