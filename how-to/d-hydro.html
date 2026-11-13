@@ -277,13 +277,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="write-a-net-file" class="level2">
 <h2 class="anchored" data-anchor-id="write-a-net-file">Write a net file</h2>
-<div id="e2b0f256" class="cell" data-execution_count="2">
+<div id="d772cc4c" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> write_ugrid</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>write_ugrid(quad_mesh, workdir <span class="op">/</span> <span class="st">"mesh_net.nc"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The file is UGRID-1.0 with the structure of the D-HYDRO mesh generator export: the <code>Mesh2d</code> topology with nodes, edges and faces, edge and face coordinates and face bounds. For EPSG:28992 the CRS variable has exactly the attributes of the D-Flow FM plugin; for another projected CRS they are derived with pyproj; a mesh without CRS gets no CRS variable.</p>
-<div id="5bd0e4ad" class="cell" data-execution_count="3">
+<div id="fc76441c" class="cell" data-execution_count="3">
 <div class="cell-output cell-output-stdout">
 <pre><code>variables: projected_coordinate_system, Mesh2d, Mesh2d_node_x, Mesh2d_node_y, Mesh2d_face_nodes, Mesh2d_edge_nodes, Mesh2d_edge_x, Mesh2d_edge_y, Mesh2d_face_x, Mesh2d_face_y, Mesh2d_face_x_bnd, Mesh2d_face_y_bnd
 CRS: Amersfoort / RD New (EPSG 28992)</code></pre>
@@ -493,7 +493,7 @@ CRS: Amersfoort / RD New (EPSG 28992)</code></pre>
 <section id="read-a-net-file" class="level2">
 <h2 class="anchored" data-anchor-id="read-a-net-file">Read a net file</h2>
 <p><code>read_ugrid</code> reads only the 2D mesh of a net file; a 1D network and other variables in it are ignored. The lattice is derived from the square cells, so you can check or refine a mesh from any program:</p>
-<div id="88016958" class="cell" data-execution_count="4">
+<div id="1f87421c" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> refined_quads <span class="im">import</span> check, read_ugrid</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>quad_mesh <span class="op">=</span> read_ugrid(workdir <span class="op">/</span> <span class="st">"mesh_net.nc"</span>)</span>
