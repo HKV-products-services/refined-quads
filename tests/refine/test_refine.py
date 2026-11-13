@@ -258,3 +258,12 @@ def test_refine_keeps_the_cells_of_a_small_water_area_meshkernel_would_close():
     kept = [i for i in range(len(result.mesh.faces)) if cell_points(result.mesh, i) <= corners]
     assert len(kept) == 2
     assert check(result.mesh).is_valid
+
+
+def test_refine_with_zero_transition_rows_gives_a_valid_mesh(base_mesh):
+    area = Point(X0 + 200, Y0 + 150).buffer(30)
+
+    result = refine_rd(base_mesh, [(area, 3)], transition_rows=0)
+
+    assert check(result.mesh).is_valid
+    assert closable_holes(result.mesh) == []

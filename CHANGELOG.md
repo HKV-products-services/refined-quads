@@ -7,6 +7,14 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+### Changed
+
+- Transition rows may be 0, in `generate`, `refine`, the TOML file and the command
+  line: only the cells touching a finer area get its level, and the 2:1 balance makes
+  the transition. That gives 4–19% fewer cells on the golden-master scenarios, all
+  valid. A negative number still raises `InputError`. The old generator counted
+  `buffer_rows` 0 as 1, so its 0 is `transition_rows=1` here (the same cells as before).
+
 ## [0.3.0] - 2026-11-12
 
 ### Changed

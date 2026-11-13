@@ -34,8 +34,10 @@ _Avoid_: parent square, quadtree cell, leaf
 
 **Transition rows**:
 For the step from refinement level k+1 down to level k, the number of rows of
-level-(k+1) cells kept around the finer area before the mesh coarsens; at least 1.
-Given per step from coarse to fine.
+level-(k+1) cells kept around the finer area before the mesh coarsens; at least 0.
+With 0 only the cells touching the finer area get its level and the 2:1 balance makes
+the transition. Given per step from coarse to fine. The old generator's `buffer_rows`
+counted 0 as 1, so its 0 is 1 here.
 _Avoid_: buffer rows, bufferrijen, buffer
 
 **Transition cell**:

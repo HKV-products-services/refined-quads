@@ -37,14 +37,16 @@ halving gives. It becomes one square cell, or is filled by transition cells.
 
 Around a refinement area the mesh does not jump from fine to coarse at once. **Transition
 rows** set, per step from coarse to fine, how many rows of finer cells surround the
-finer area before the mesh coarsens:
+finer area before the mesh coarsens. With 0 only the cells touching the area get its
+level and the 2:1 balance makes the transition; that gives the fewest cells. (The old
+generator, meshgen, counted 0 as 1: its `buffer_rows` 0 is `transition_rows=1` here.)
 
 ```{python}
 #| echo: false
 #| output: asis
 area = box(155_100, 463_100, 155_140, 463_140)
 panels = []
-for rows in ([1, 1], [2, 2]):
+for rows in ([0, 0], [1, 1], [2, 2]):
     quad_mesh = generate(
         box(155_000, 463_000, 155_256, 463_256),
         cell_size=32.0,

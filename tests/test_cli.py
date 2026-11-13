@@ -103,7 +103,7 @@ def test_missing_output_is_an_input_error(run_dir, capsys):
         (('level = "level"', "level = 0"), r"refinement_areas\[0\]\.level: must be a column name"),
         (('level = "level"', 'level = "niveau"'), "no column 'niveau'"),
         (
-            ("transition_rows = [1, 2]", "transition_rows = [1, 0]"),
+            ("transition_rows = [1, 2]", "transition_rows = [1, -1]"),
             r"transition_rows\[1\]: must be",
         ),
         (
@@ -215,3 +215,14 @@ def test_verbose_prints_progress_to_stderr(run_dir, capsys):
     err = capsys.readouterr().err
     assert "Quad Grid: base grid" in err
     assert "100% Quad Grid: done" in err
+
+
+def test_toml_accepts_zero_transition_rows(run_dir):
+    (run_dir / "run.toml").write_text(
+        SPEC.replace("transition_rows = [1, 2]", "transition_rows = 0"), encoding="utf-8"
+    )
+
+    spec = MeshSpec.from_toml(run_dir / "run.toml")
+
+    assert spec.transition_rows == 0
+    assert check(spec.generate()).is_valid

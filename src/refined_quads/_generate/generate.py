@@ -54,7 +54,10 @@ def generate(
     transition_rows : int or sequence of int
         Rows of finer cells kept around a finer area before the mesh coarsens, per
         step from coarse to fine: the first value is for the step from level 0 to 1.
-        One value per level step, or a single value for every step; each at least 1.
+        One value per level step, or a single value for every step; each at least 0.
+        With 0 only the cells touching a finer area get its level and the 2:1 balance
+        makes the transition. The old generator (meshgen) counted 0 as 1: its
+        ``buffer_rows`` 0 is 1 here.
     water_areas : iterable of shapely geometry, Areas or GeoDataFrame
         Polygons where no cells are kept, because the 1D network carries the flow
         there. Giving water areas applies them.
@@ -91,7 +94,7 @@ def generate(
         geographic, the domain is empty or not polygonal, the cell size is not a positive
         length, a refinement area is empty or not polygonal, a level is not an
         integer of at least 1, the transition rows are not one integer of at least
-        1 per level step, a water area is empty or not polygonal, the water removal
+        0 per level step, a water area is empty or not polygonal, the water removal
         rule is unknown, the origin is not two finite numbers, or no cells are left
         inside the domain.
     OrthogonalityRepairError
@@ -338,8 +341,8 @@ def _refinement_area(item: object, index: int) -> tuple[BaseGeometry, int]:
 def _transition_rows(value: int | Sequence[int], levels: int) -> list[int]:
     if isinstance(value, str | bytes) or not isinstance(value, Sequence):
         n = _integer(value)
-        if n is None or n < 1:
-            raise InputError(f"transition rows must be integers of at least 1, got {value!r}")
+        if n is None or n < 0:
+            raise InputError(f"transition rows must be integers of at least 0, got {value!r}")
         return [n] * levels
     rows = list(value)
     if len(rows) != levels:
@@ -350,9 +353,9 @@ def _transition_rows(value: int | Sequence[int], levels: int) -> list[int]:
     result = []
     for step, raw in enumerate(rows):
         n = _integer(raw)
-        if n is None or n < 1:
+        if n is None or n < 0:
             raise InputError(
-                f"transition rows must be integers of at least 1; got {raw!r} for the step "
+                f"transition rows must be integers of at least 0; got {raw!r} for the step "
                 f"from level {step} to {step + 1}"
             )
         result.append(n)

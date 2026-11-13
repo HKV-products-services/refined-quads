@@ -66,7 +66,7 @@ def refine(
         Transition rows per level step from coarse to fine, as for :func:`generate`:
         one value per step up to the highest level of the result (that of the mesh
         or of the new areas, whichever is higher), or one value for every step; each
-        at least 1. Only the steps the new areas need are used.
+        at least 0. Only the steps the new areas need are used.
     domain : shapely geometry or Areas, optional
         New cells outside it are removed; its holes act as water areas. It never adds
         cells: refining stays within the footprint of the mesh.

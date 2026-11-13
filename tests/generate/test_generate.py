@@ -93,18 +93,48 @@ def test_level_given_as_integral_float_is_accepted():
 @pytest.mark.parametrize(
     ("rows", "message"),
     [
-        (0, "at least 1"),
-        ([1, 0], "got 0 for the step from level 1 to 2"),
-        ([0, 1], "got 0 for the step from level 0 to 1"),
+        (-1, "at least 0"),
+        ([1, -1], "got -1 for the step from level 1 to 2"),
+        ([-1, 1], "got -1 for the step from level 0 to 1"),
         ([1, 1, 1], "so 2 values, got 3"),
         ([1], "so 2 values, got 1"),
-        ([1, 1.5], "at least 1"),
-        ("1", "at least 1"),
+        ([1, 1.5], "at least 0"),
+        ("1", "at least 0"),
     ],
 )
 def test_invalid_transition_rows_raise_input_error(rows, message):
     with pytest.raises(InputError, match=message):
         generate_rd(DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)], transition_rows=rows)
+
+
+@pytest.mark.parametrize(
+    "scenario", [s for s in SCENARIOS if s.levels], ids=[s.name for s in SCENARIOS if s.levels]
+)
+def test_zero_transition_rows_give_a_valid_mesh_with_fewer_cells(scenario):
+    # 0 rows: only the cells touching a refinement area get its level; the 2:1 balance
+    # makes the transition. (meshgen's buffer_rows 0 counted as 1: that is 1 here.)
+    kwargs = {
+        "cell_size": scenario.cell_size,
+        "refinement_areas": scenario.refinement_areas,
+        "water_areas": scenario.water_areas,
+        "water_removal": scenario.water_removal,
+    }
+    zero = generate_rd(scenario.domain, transition_rows=0, **kwargs)
+    one = generate_rd(scenario.domain, transition_rows=1, **kwargs)
+
+    report = check(zero)
+    assert report.is_valid, report.summary()
+    assert closable_holes(zero) == []
+    assert len(zero.faces) < len(one.faces)
+    assert zero.lattice.levels == scenario.levels
+
+
+def test_zero_rows_per_step_can_be_mixed_with_other_counts():
+    mixed = generate_rd(
+        DOMAIN, cell_size=25.0, refinement_areas=[(AREA, 2)], transition_rows=[0, 2]
+    )
+
+    assert check(mixed).is_valid
 
 
 @pytest.mark.parametrize("level", [0, -1, 2.5, "2", None, True, math.nan])

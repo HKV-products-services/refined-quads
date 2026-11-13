@@ -588,9 +588,9 @@ def _rows(value: object, key: str) -> int | tuple[int, ...]:
     rows = []
     for i, raw in enumerate(values):
         n = _integer(raw)
-        if n is None or n < 1:
+        if n is None or n < 0:
             where = key if not isinstance(value, list | tuple) else f"{key}[{i}]"
-            raise InputError(f"{where}: must be an integer of at least 1, got {raw!r}")
+            raise InputError(f"{where}: must be an integer of at least 0, got {raw!r}")
         rows.append(n)
     return tuple(rows) if isinstance(value, list | tuple) else rows[0]
 
