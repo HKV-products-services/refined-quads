@@ -7,6 +7,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-13
+
 ### Changed
 
 - Transition rows may be 0, in `generate`, `refine`, the TOML file and the command
