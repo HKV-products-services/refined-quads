@@ -44,7 +44,7 @@ generator, meshgen, counted 0 as 1: its `buffer_rows` 0 is `transition_rows=1` h
 ```{python}
 #| echo: false
 #| output: asis
-area = box(155_100, 463_100, 155_140, 463_140)
+area = box(155_096, 463_096, 155_160, 463_160)  # on the lattice, so each row shows
 panels = []
 for rows in ([0, 0], [1, 1], [2, 2]):
     quad_mesh = generate(
