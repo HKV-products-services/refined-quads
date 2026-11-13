@@ -298,7 +298,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>transition_rows</td>
 <td>int or sequence of int</td>
-<td>Rows of finer cells kept around a finer area before the mesh coarsens, per step from coarse to fine: the first value is for the step from level 0 to 1. One value per level step, or a single value for every step; each at least 1.</td>
+<td>Rows of finer cells kept around a finer area before the mesh coarsens, per step from coarse to fine: the first value is for the step from level 0 to 1. One value per level step, or a single value for every step; each at least 0. With 0 only the cells touching a finer area get its level and the 2:1 balance makes the transition. The old generator (meshgen) counted 0 as 1: its <code>buffer_rows</code> 0 is 1 here.</td>
 <td><code>1</code></td>
 </tr>
 <tr class="odd">
@@ -377,7 +377,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td></td>
 <td>InputError</td>
-<td>If input has no CRS and <code>crs</code> is not given, the CRS of the domain is geographic, the domain is empty or not polygonal, the cell size is not a positive length, a refinement area is empty or not polygonal, a level is not an integer of at least 1, the transition rows are not one integer of at least 1 per level step, a water area is empty or not polygonal, the water removal rule is unknown, the origin is not two finite numbers, or no cells are left inside the domain.</td>
+<td>If input has no CRS and <code>crs</code> is not given, the CRS of the domain is geographic, the domain is empty or not polygonal, the cell size is not a positive length, a refinement area is empty or not polygonal, a level is not an integer of at least 1, the transition rows are not one integer of at least 0 per level step, a water area is empty or not polygonal, the water removal rule is unknown, the origin is not two finite numbers, or no cells are left inside the domain.</td>
 </tr>
 <tr class="even">
 <td></td>
