@@ -44,7 +44,9 @@ generator, meshgen, counted 0 as 1: its `buffer_rows` 0 is `transition_rows=1` h
 ```{python}
 #| echo: false
 #| output: asis
-area = box(155_096, 463_096, 155_160, 463_160)  # on the lattice, so each row shows
+# Centred on a base cell (the lattice starts at 154976, 462976) and with its edges on the
+# 8 m lattice: the mesh is symmetric and each transition row shows.
+area = box(155_096, 463_096, 155_144, 463_144)
 panels = []
 for rows in ([0, 0], [1, 1], [2, 2]):
     quad_mesh = generate(
