@@ -142,31 +142,6 @@ ul.task-list li input[type="checkbox"] {
     <a class="dropdown-item" href="../explanation/refine.html">
  <span class="dropdown-text">Why refine starts from the mesh</span></a>
   </li>  
-        <li><hr class="dropdown-divider"></li>
-        <li>
-    <a class="dropdown-item" href="../adr/index.html">
- <span class="dropdown-text">Decisions</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0001-refine-from-existing-mesh.html">
- <span class="dropdown-text">Refine starts from the existing mesh; generate is refine of an empty base grid</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0002-output-contract-same-cells.html">
- <span class="dropdown-text">Output contract: the same cells, compared on lattice indices</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0003-no-bed-level-in-the-net-file.html">
- <span class="dropdown-text">No bed level in the net file written by write_ugrid</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0004-no-holes-meshkernel-closes.html">
- <span class="dropdown-text">No holes that MeshKernel closes: small water areas keep their cells</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0005-bed-level-after-the-last-meshkernel-rebuild.html">
- <span class="dropdown-text">Bed level per cell, after the last MeshKernel rebuild</span></a>
-  </li>  
     </ul>
   </li>
   <li class="nav-item">
@@ -225,22 +200,21 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Refining used to mean generating the mesh twice with the original input, once with and once without the new areas, and splicing in the difference. That needs the original input, works only for meshes this generator made on a lattice through a multiple of the base cell, and fails for models made before 24-10-2026, when the generator still rounded the base cell down to a power of 2 (25 m became 16 m).</p>
-<p><code>refine</code> starts from the mesh itself instead (<a href="../adr/0001-refine-from-existing-mesh.html">ADR-0001</a>):</p>
+<p><code>refine</code> needs only the mesh, not the input it was made with:</p>
 <ol type="1">
-<li><strong>Recognise</strong> the lattice and the lattice squares from the cells: square cells are their own lattice square; other cells are grouped into the square they fill together.</li>
-<li><strong>Refine</strong> those squares where the new areas need it, restore the 2:1 balance where needed, and rebuild the transitions around the changed squares with this package’s patterns.</li>
-<li><strong>Keep</strong> every square whose split sides do not change: its cells stay exactly, nodes and stored coordinates included.</li>
+<li>Recognise the lattice and the lattice squares from the cells. A square cell is its own lattice square; other cells are grouped into the square they fill together.</li>
+<li>Refine the squares where the new areas need it, restore the 2:1 balance, and rebuild the transitions around the changed squares with this package’s patterns.</li>
+<li>Keep every square whose split sides do not change, with its cells, nodes and coordinates exactly as they were.</li>
 </ol>
 <p><code>generate</code> is the same operation started from the base grid, which is why <code>refine(generate(X), Y)</code> gives the same cells as <code>generate(X + Y)</code> when the domain and the water areas are the same and <code>Y</code> stays away from where water or the domain removed cells.</p>
 <section id="the-footprint-rule" class="level2">
 <h2 class="anchored" data-anchor-id="the-footprint-rule">The footprint rule</h2>
-<p>The <strong>footprint</strong> is the area the cells of the mesh cover; holes are not part of it. Refining never adds cells outside it: new cells only replace existing ones. A domain or water areas given to <code>refine</code> only remove <strong>new</strong> cells.</p>
-<p>A lattice square that its cells fill only partly — because cells were clipped along water — is recognised too. Untouched, it keeps its remaining cells. When it must become finer, a new cell in it stays only where it lies completely within the old cells, so the mesh does not grow into the water; where finer cells cannot fill a clipped triangle exactly, a little area is lost.</p>
+<p>The footprint is the area the cells of the mesh cover; holes are not part of it. Refining never adds cells outside it, because new cells only replace existing ones. A domain or water areas given to <code>refine</code> only remove new cells.</p>
+<p>A lattice square that its cells fill only partly, because cells were clipped along water, is recognised too. Untouched, it keeps its remaining cells. When it must become finer, a new cell in it stays only where it lies completely within the old cells, so the mesh does not grow into the water; where finer cells cannot fill a clipped triangle exactly, a little area is lost.</p>
 </section>
 <section id="meshes-from-other-programs" class="level2">
 <h2 class="anchored" data-anchor-id="meshes-from-other-programs">Meshes from other programs</h2>
-<p>The lattice — origin, base cell and levels — is derived from the square cells, so any origin and any base cell work. Transition cells may follow any pattern (another triangulation, a pentagon) as long as the cells of a lattice square have their nodes only at its corners, side midpoints and centre. A square that is touched gets this package’s patterns; a square that is not keeps its own.</p>
+<p>The lattice (origin, base cell and levels) is derived from the square cells, so any origin and any base cell work. Transition cells may follow any pattern (another triangulation, a pentagon) as long as the cells of a lattice square have their nodes only at its corners, side midpoints and centre. A square that is touched gets this package’s patterns; a square that is not keeps its own.</p>
 </section>
 <section id="when-refine-refuses" class="level2">
 <h2 class="anchored" data-anchor-id="when-refine-refuses">When refine refuses</h2>

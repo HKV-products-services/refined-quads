@@ -177,31 +177,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../explanation/refine.html">
  <span class="dropdown-text">Why refine starts from the mesh</span></a>
   </li>  
-        <li><hr class="dropdown-divider"></li>
-        <li>
-    <a class="dropdown-item" href="../adr/index.html">
- <span class="dropdown-text">Decisions</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0001-refine-from-existing-mesh.html">
- <span class="dropdown-text">Refine starts from the existing mesh; generate is refine of an empty base grid</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0002-output-contract-same-cells.html">
- <span class="dropdown-text">Output contract: the same cells, compared on lattice indices</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0003-no-bed-level-in-the-net-file.html">
- <span class="dropdown-text">No bed level in the net file written by write_ugrid</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0004-no-holes-meshkernel-closes.html">
- <span class="dropdown-text">No holes that MeshKernel closes: small water areas keep their cells</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0005-bed-level-after-the-last-meshkernel-rebuild.html">
- <span class="dropdown-text">Bed level per cell, after the last MeshKernel rebuild</span></a>
-  </li>  
     </ul>
   </li>
   <li class="nav-item">
@@ -276,7 +251,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <table class="caption-top table">
 <colgroup>
 <col style="width: 6%">
-<col style="width: 8%">
+<col style="width: 9%">
 <col style="width: 84%">
 </colgroup>
 <thead>
@@ -360,7 +335,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>closable_holes</td>
 <td>numpy.ndarray of float, shape (k, 2)</td>
-<td>Centres of holes that MeshKernel makes a cell of when it builds the cells from nodes and edges, as hydrolib (<code>mesh2d_from_netcdf</code>) and the D-HYDRO GUI do: a ring of at most six nodes around no cell. Information only: a hole of four nodes becomes an ordinary cell, but one of five or six nodes can be a cell D-Flow FM rejects as not orthogonal (ADR-0004).</td>
+<td>Centres of holes that MeshKernel makes a cell of when it builds the cells from nodes and edges, as hydrolib (<code>mesh2d_from_netcdf</code>) and the D-HYDRO GUI do: a ring of at most six nodes around no cell. Information only: a hole of four nodes becomes an ordinary cell, but one of five or six nodes can be a cell D-Flow FM rejects as not orthogonal.</td>
 </tr>
 </tbody>
 </table>

@@ -177,31 +177,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../explanation/refine.html">
  <span class="dropdown-text">Why refine starts from the mesh</span></a>
   </li>  
-        <li><hr class="dropdown-divider"></li>
-        <li>
-    <a class="dropdown-item" href="../adr/index.html">
- <span class="dropdown-text">Decisions</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0001-refine-from-existing-mesh.html">
- <span class="dropdown-text">Refine starts from the existing mesh; generate is refine of an empty base grid</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0002-output-contract-same-cells.html">
- <span class="dropdown-text">Output contract: the same cells, compared on lattice indices</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0003-no-bed-level-in-the-net-file.html">
- <span class="dropdown-text">No bed level in the net file written by write_ugrid</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0004-no-holes-meshkernel-closes.html">
- <span class="dropdown-text">No holes that MeshKernel closes: small water areas keep their cells</span></a>
-  </li>  
-        <li>
-    <a class="dropdown-item" href="../adr/0005-bed-level-after-the-last-meshkernel-rebuild.html">
- <span class="dropdown-text">Bed level per cell, after the last MeshKernel rebuild</span></a>
-  </li>  
     </ul>
   </li>
   <li class="nav-item">
@@ -302,7 +277,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>transition_rows</td>
 <td>int or sequence of int</td>
-<td>Rows of finer cells kept around a finer area before the mesh coarsens, per step from coarse to fine: the first value is for the step from level 0 to 1. One value per level step, or a single value for every step; each at least 0. With 0 only the cells touching a finer area get its level and the 2:1 balance makes the transition. The old generator (meshgen) counted 0 as 1: its <code>buffer_rows</code> 0 is 1 here.</td>
+<td>Rows of finer cells kept around a finer area before the mesh coarsens, per step from coarse to fine: the first value is for the step from level 0 to 1. One value per level step, or a single value for every step; each at least 0. With 0 only the cells touching a finer area get its level and the 2:1 balance makes the transition.</td>
 <td><code>1</code></td>
 </tr>
 <tr class="odd">
