@@ -1,0 +1,54 @@
+---
+title: "Bed level per cell, after the last MeshKernel rebuild"
+---
+
+In a model built with hydrolib / D-HyDAMO the bed level goes in per cell, as
+`mesh2d_face_z` in the model's net file with `bedLevType = 1`, on exactly the cells
+MeshKernel builds from the nodes and edges: after the last change to the mesh the cells
+are rebuilt with MeshKernel once more, the bed level is given to those cells, and the
+mesh is not changed afterwards. No sample file (`bodem_2d.xyz`) is needed.
+
+The D-HYDRO GUI, like hydrolib's `mesh2d_from_netcdf`, builds the cells again from nodes
+and edges, and MeshKernel also makes a cell of a small hole. A level per cell fits only
+when the net file holds those cells, in that order.
+
+Found on the Geul model (D-HYDRO Suite 2026.02):
+
+- Model 8d (2026-11-12): the net file lacked one cell that MeshKernel builds (a hole
+  left by a clip); the GUI rejected `mesh2d_face_z` ("number of values is not equal to
+  multiple of all argument values"). A sample file with two `[Initial] bedlevel` blocks
+  worked around it (the route this documentation first gave, ADR-0003).
+- Berekening_10rq (2026-11-25): refined-quads → `mesh2d_from_netcdf` → branch clip →
+  bed level. A fresh MeshKernel rebuild of the saved net file gave 277,208 cells, the
+  file 277,207: the branch clip had left a hole after the rebuild.
+- Berekening_10rq2: the same with one more MeshKernel rebuild right before the bed
+  level. A fresh rebuild of the saved net file gives the same 277,208 cells in the same
+  order, and the model loads in the GUI with the right bed levels.
+
+This is the route of the D-HyDAMO example notebook (HYDROLIB PR #263, `use_refined_quads`).
+
+MeshKernel does not keep cells but nodes and edges, and builds the cells again each time:
+a small hole becomes a cell (cells "appear"), a cell a clip removed can come back, and a
+ring it does not take for a cell (more than six nodes) is not a cell after the rebuild
+(cells "disappear"); see [ADR-0004](0004-no-holes-meshkernel-closes.qmd). The model
+therefore holds the cells of the last rebuild, which can differ from the mesh
+refined-quads made.
+
+## Considered Options
+
+- **Bed level as samples (`bodem_2d.xyz`, two `[Initial]` blocks, `mesh2d_face_z`
+  removed after saving).** Works, but needs an extra file, field file blocks and a
+  post-processing step on the saved net file. Replaced for now; it can come back as an
+  alternative for a user to whom cells appearing or disappearing through MeshKernel is a
+  problem, since samples are assigned by location, not per cell.
+- **Remove the cells MeshKernel adds (gap repair).** Rejected: the GUI adds them again.
+
+## Consequences
+
+- The documentation (Use the mesh in D-HYDRO) gives this route and a check: read the
+  saved net file again with hydrolib; the cells must be the same, in the same order.
+- A clip after the last rebuild breaks the rule. A single cell a clip removes comes back
+  in the rebuild, as it does in the GUI.
+- The cells depend on the MeshKernel that builds them; if the GUI's MeshKernel ever
+  builds other cells, the check above does not show it. Opening the model in the GUI
+  remains the final test.

@@ -7,6 +7,14 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ## [Unreleased]
 
+### Changed
+
+- Use the mesh in D-HYDRO: the bed level goes in per cell (`mesh2d_face_z`,
+  `bedLevType = 1`) on the cells of one last MeshKernel rebuild after all changes to the
+  mesh, with a check that a saved net file gives the same cells when read again
+  (ADR-0005). The route with a sample file (`bodem_2d.xyz` and two `[Initial]` blocks)
+  is removed. Tested on the Geul model in D-Flow FM and the D-HYDRO GUI.
+
 ## [0.4.0] - 2026-11-13
 
 ### Changed

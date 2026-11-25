@@ -68,8 +68,8 @@ print(
 MeshKernel keeps nodes and edges and derives the cells from them again. A single
 removed cell whose edges all stay (its neighbours all remain) therefore comes back,
 and a hole of three or four nodes becomes a cell again. That is accepted here,
-because it is what the models are built with; give bed levels as samples that are
-interpolated onto the cells rather than as values per cell.
+because it is what the models are built with; give the bed level only after the last
+MeshKernel rebuild (see [Use the mesh in D-HYDRO](d-hydro.qmd)).
 :::
 
 ## Small water areas stay cells

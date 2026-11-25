@@ -55,132 +55,107 @@ with netCDF4.Dataset(workdir / "mesh_net.nc") as ds:
 
 ## Bed levels
 
-The net file has no bed level (no `Mesh2d_node_z` or `Mesh2d_face_z`). Give the bed level
-to D-Flow FM as samples: a file `bodem_2d.xyz` with `x y z` on every cell centre, and two
-`[Initial]` blocks at the top of the field file (after `[General]`), with
-`bedLevType = 1` in the MDU:
+The net file of `write_ugrid` has no bed level. Give it per cell after the mesh is in
+the model, as `mesh2d_face_z` in the model's net file, with `bedLevType = 1`; no sample
+file is needed. One rule makes this work in the D-HYDRO GUI as well
+([ADR-0005](../adr/0005-bed-level-after-the-last-meshkernel-rebuild.qmd)):
 
-```ini
-[Initial]
-quantity            = bedlevel
-dataFile            = bodem_2d.xyz
-dataFileType        = sample
-interpolationMethod = averaging
-operand             = O
-averagingType       = nearestNb
-averagingRelSize    = 3.0
-averagingNumMin     = 1
-extrapolationMethod = 0
-locationType        = 2d
+> **The cells in the net file must be exactly the cells MeshKernel builds from its
+> nodes and edges.** So: rebuild the cells with MeshKernel once more after the last
+> change to the mesh, give the bed level to those cells, and change nothing afterwards.
 
-[Initial]
-quantity            = bedlevel
-dataFile            = bodem_2d.xyz
-dataFileType        = sample
-interpolationMethod = averaging
-operand             = O
-averagingType       = nearestNb
-averagingRelSize    = 1.0
-averagingNumMin     = 1
-extrapolationMethod = 0
-locationType        = 2d
-```
+The D-HYDRO GUI, like hydrolib's `mesh2d_from_netcdf`, does not take the cells from the
+net file: it builds them again from the nodes and edges, and MeshKernel also makes a
+cell of a small hole (a ring of at most six nodes). A bed level per cell only fits when
+the file already holds those cells, in that order. Otherwise the GUI stops with "number
+of values is not equal to multiple of all argument values" — or, with the same number
+of cells in another order, puts the levels on the wrong cells.
 
-The first block fills every cell from the nearest sample in a wide area, also cells
-that have no sample of their own; the second gives each cell the value on its own
-centre. A bed level per cell in the net file does not work in the D-HYDRO GUI: the GUI
-rebuilds the cells from nodes and edges and closes small gaps, after which the list no
-longer fits the cells and the import fails (see
-[ADR-0003](../adr/0003-no-bed-level-in-the-net-file.qmd)). Without samples D-Flow FM uses
-`BedLevUni` everywhere, without a warning.
+::: {.callout-note title="What MeshKernel does with the cells"}
+MeshKernel keeps nodes and edges, not cells, and finds the cells again each time it
+builds them. Cells can **appear**: a small hole (a ring of at most six nodes) becomes a
+cell, and a single cell a clip removed can come back. Cells can also **disappear**: a ring
+MeshKernel does not take for a cell (more than six nodes) is no cell after the rebuild.
+The model therefore holds the cells of the last rebuild, which can differ from the mesh
+refined-quads made. `generate` and `refine` leave no holes themselves
+([ADR-0004](../adr/0004-no-holes-meshkernel-closes.qmd)), but a clip in the model build
+can.
+:::
 
 ### With D-HyDAMO
 
-When the mesh is read with `mesh2d_from_netcdf` and the bed level comes from a raster
-(`mesh2d_altitude_from_raster(network, raster, "face", ...)`), hydrolib writes it as
-`mesh2d_face_z`. Turn it into samples around saving the model. Before
-`dimr.save(recurse=True)`:
-
 ```python
-import numpy as np
+from pathlib import Path
 
-m2d = fm.geometry.netfile.network._mesh2d
-fz = np.asarray(m2d.mesh2d_face_z, dtype=float)
-ok = np.isfinite(fz) & (fz > -999)
-bodem_xyz = np.column_stack([m2d.mesh2d_face_x, m2d.mesh2d_face_y, fz])[ok]
+import refined_quads
+from hydrolib.dhydamo.geometry import mesh
+
+quad_mesh = refined_quads.generate(
+    domain,
+    cell_size=32.0,
+    refinement_areas=refinement_areas,
+    transition_rows=1,
+    water_areas=water_areas,
+    crs="EPSG:28992",
+)
+net_file = Path(output_path) / "refined_quads_net.nc"
+refined_quads.write_ugrid(quad_mesh, net_file)
+
+network = fm.geometry.netfile.network
+mesh.mesh2d_from_netcdf(network, net_file)  # MeshKernel builds the cells
+
+# Other changes to the mesh (mesh2d_clip, branch clips, ...) go here, never later.
+
+# The last MeshKernel rebuild: the cells as the D-HYDRO GUI will build them.
+m2d = network._mesh2d
+built = m2d.get_mesh2d()
+m2d._set_mesh2d(node_x=built.node_x, node_y=built.node_y, edge_nodes=built.edge_nodes)
+
+mesh.mesh2d_altitude_from_raster(network, rasterpath, "face", "mean", fill_option="nearest")
 fm.geometry.bedlevtype = 1
+
+# 1D2D links do not change the cells; then dimr.save(recurse=True)
 ```
 
-After saving: write the samples, remove `mesh2d_face_z` from the net file (netCDF4
-cannot delete a variable, so the rest is copied), and put the two blocks above at the
-top of the field file:
+Do not call the mesh `mesh`: that name is the D-HyDAMO module (see the warning at the
+top). A clip after the last rebuild breaks the rule: on the Geul model a branch clip
+removed one cell after the first rebuild, the hole it left became a cell again in a new
+rebuild, and the net file had one cell fewer than the GUI would build. With the rebuild
+after the clip the cell is simply there, as it is in the GUI.
+
+`fill_option="nearest"` gives a cell without raster values the value of the nearest
+cell; with `fill_value=-999` it would get -999 as its bed level.
+
+**Check before opening the model.** Read the saved net file again as hydrolib and the
+GUI do; the cells must be the same, in the same order:
 
 ```python
-import os, re
 import netCDF4
+import numpy as np
+from hydrolib.core.dflowfm.net.models import Network
+from hydrolib.core.dflowfm.net.reader import UgridReader
 
-dfm_dir = Path(output_path) / "dflowfm"
-np.savetxt(dfm_dir / "bodem_2d.xyz", bodem_xyz, fmt="%.3f %.3f %.4f")
-
-net = dfm_dir / Path(str(fm.geometry.netfile.filepath)).name
-tmp = net.with_name(net.stem + "_tmp.nc")
-with netCDF4.Dataset(net) as src, netCDF4.Dataset(tmp, "w", format=src.file_format) as dst:
-    for ds in (src, dst):
-        ds.set_auto_maskandscale(False)
-        ds.set_auto_chartostring(False)
-    dst.setncatts(src.__dict__)
-    for name, dim in src.dimensions.items():
-        dst.createDimension(name, None if dim.isunlimited() else len(dim))
-    for name, var in src.variables.items():
-        if name.lower() == "mesh2d_face_z":
-            continue
-        atts = dict(var.__dict__)
-        fill = atts.pop("_FillValue", None)
-        dst.createVariable(name, var.datatype, var.dimensions, fill_value=fill).setncatts(atts)
-        dst[name][...] = var[...]
-os.replace(tmp, net)
-
-block = """[Initial]
-quantity            = bedlevel
-dataFile            = bodem_2d.xyz
-dataFileType        = sample
-interpolationMethod = averaging
-operand             = O
-averagingType       = nearestNb
-averagingRelSize    = {}
-averagingNumMin     = 1
-extrapolationMethod = 0
-locationType        = 2d
-
-"""
-ini = dfm_dir / "fieldFile.ini"
-text = ini.read_text() if ini.exists() else "[General]\nfileVersion = 2.00\nfileType    = iniField\n\n"
-m = re.search(r"^\[(?!general\])", text, re.M | re.I)  # the first block after [General]
-i = m.start() if m else len(text)
-ini.write_text(text[:i] + block.format(3.0) + block.format(1.0) + text[i:])
-
-# hydrolib leaves iniFieldFile out of the MDU when the model had no field file
-mdu = dfm_dir / Path(str(fm.filepath)).name
-t = mdu.read_text()
-if not re.search(r"(?im)^\s*iniFieldFile\s*=\s*[^\s#]", t):
-    t = re.sub(r"(?im)^\s*iniFieldFile\s*=.*\n", "", t)
-    t = re.sub(r"(?im)^(\[geometry\][^\n]*\n)", r"\1iniFieldFile = fieldFile.ini\n", t, count=1)
-    mdu.write_text(t)
+net = Path(output_path) / "dflowfm" / "network.nc"
+with netCDF4.Dataset(net) as ds:
+    face_x, face_y = ds["mesh2d_face_x"][:], ds["mesh2d_face_y"][:]
+rebuilt = Network()
+UgridReader(net).read_mesh2d(rebuilt._mesh2d)
+assert len(rebuilt._mesh2d.mesh2d_face_x) == len(face_x), "MeshKernel builds other cells"
+assert np.allclose(rebuilt._mesh2d.mesh2d_face_x, face_x), "cells in another order"
+assert np.allclose(rebuilt._mesh2d.mesh2d_face_y, face_y), "cells in another order"
 ```
 
-Other bed level blocks in the field file come after these two and overwrite them where
-they have values, for example a fixed bed level per polygon.
+Tested on the Geul model (277,208 cells, D-HYDRO Suite 2026.02): the check passes, the
+model loads in the GUI with the right bed levels, and D-Flow FM uses the level of every
+cell exactly.
 
 ### Bed level on the nodes
 
 To give the bed level on the nodes instead (`bedLevType` 3 to 6), sample the raster on
-the nodes and write it as `mesh2d_node_z`. The nodes do not change when the GUI rebuilds
-the cells, so a value per node always fits; no sample file is needed. Before
-`dimr.save(recurse=True)`:
+the nodes after the last MeshKernel rebuild; it is written as `mesh2d_node_z`:
 
 ```python
 import types
-import numpy as np
 
 # hydrolib fills NaN's (nodes on the edge, partly outside the raster) in place, but
 # pandas 3 returns read-only arrays: let the raster statistics return writable copies
@@ -192,19 +167,12 @@ if not getattr(_stats, "_writable", False):
     _writable_stats._writable = True
     mesh.rasterstats.raster_stats_fine_cells = _writable_stats
 
-network = fm.geometry.netfile.network
 mesh.mesh2d_altitude_from_raster(network, rasterpath, "node", "mean", fill_option="nearest")
-m2d = network._mesh2d
-if len(m2d.mesh2d_face_z) != len(m2d.mesh2d_face_x):  # a stale face_z breaks the save
-    m2d.mesh2d_face_z = np.empty(0)
 fm.geometry.bedlevtype = 3  # 3 mean, 4 minimum, 5 maximum of the node values
 ```
 
-After saving, remove `mesh2d_face_z` from the net file as above (the block up to
-`os.replace(tmp, net)`): hydrolib always writes it, and the GUI reads it and fails on its
-rebuilt cells. Leave out the `[Initial] bedlevel` blocks: they would overwrite the nodes.
 Tested with D-Flow FM 2026.02: every cell gets a bed level between the lowest and the
-highest of its node values.
+highest of its node values. Not yet tested in the D-HYDRO GUI.
 
 ### Which bedLevType
 
@@ -215,7 +183,7 @@ the finite-volume meaning. This table uses cell, cell side and node only.
 
 | `bedLevType` | Input | Level of a cell side | Bed level of the cell |
 | --- | --- | --- | --- |
-| 1 | per cell: samples (or `mesh2d_face_z`) | not measured (MDU: the higher of the two cells) | the cell's own value |
+| 1 | per cell: `mesh2d_face_z` | not measured (MDU: the higher of the two cells) | the cell's own value |
 | 2 | per cell side: samples | the sample | not measured |
 | 3 | per node: `mesh2d_node_z` | mean of its two nodes | the lowest of its cell sides |
 | 4 | per node | the lower of its two nodes | the lowest of its cell sides, so its lowest node |
@@ -227,12 +195,6 @@ The cell formulas were measured with D-Flow FM 2026.02 on a mesh of 849 cells: e
 matches the bed level D-Flow FM uses in every cell to 0.1 mm. In short: 1 gives each
 cell exactly its own value; 6 the mean of its nodes; 4 its lowest node; with 3 and 5 one
 low cell side makes the whole cell low.
-
-::: {.callout-note title="Net files written by refined-quads 0.1.x"}
-These contain `Mesh2d_node_z` with -999. After a clip with MeshKernel that array keeps
-its old length and saving fails with "shape mismatch". Before saving, empty it:
-`if len(m2d.mesh2d_node_z) != len(m2d.mesh2d_node_x): m2d.mesh2d_node_z = np.empty(0)`.
-:::
 
 ::: {.callout-tip title="GeoTIFF fields in the D-HYDRO GUI"}
 The GUI only reads rasters with the extension `.tif` (or `.asc`); with `.tiff` it stops

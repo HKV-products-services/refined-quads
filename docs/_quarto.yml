@@ -39,6 +39,7 @@ website:
           - adr/0002-output-contract-same-cells.qmd
           - adr/0003-no-bed-level-in-the-net-file.qmd
           - adr/0004-no-holes-meshkernel-closes.qmd
+          - adr/0005-bed-level-after-the-last-meshkernel-rebuild.qmd
       - text: "Python API"
         file: reference/index.qmd
     right:
