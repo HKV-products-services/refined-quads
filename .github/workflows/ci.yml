@@ -1,11 +1,10 @@
 ---
 name: CI
 
+# Only by hand (Actions tab, "Run workflow"): the checks run locally before a push (see
+# CLAUDE.md). The documentation is published to GitHub Pages only by such a run.
 on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:  # start by hand from the Actions tab
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -33,7 +33,12 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 | Benchmarks | `uv run pytest -m benchmark --benchmark-json=after.json`, then `uv run python tests/golden/benchmarks.py after.json --baseline before.json` (5% rule: measure before and after back to back on one machine) |
 | Lint / format | `uv run pre-commit run --all-files` (ruff check and format, yamllint, file hygiene) |
 | Types | `uv run mypy` |
-| Docs | in `docs/`: `uv run quartodoc build`, then `uv run quarto render` (or `quarto preview`). Quarto is a separate install (`C:\Program Files\Quarto\bin`); CI fails on any `WARN` in the render output |
+| Docs | in `docs/`: `uv run quartodoc build`, then `uv run quarto render` (or `quarto preview`). Quarto is a separate install (`C:\Program Files\Quarto\bin`); a `WARN` in the render output is a failure |
+
+CI runs locally: run tests, mypy, pre-commit and the docs build before a push. The GitHub
+workflow `ci.yml` runs only when started by hand (it also publishes the docs to GitHub
+Pages); do not start it, or wait for it, unless asked. `publish.yml` still runs on a
+published release.
 
 uv manages Python itself (`.python-version` = 3.12); the chocolatey Python shims on the
 development PC are broken, so do not rely on a system Python.
