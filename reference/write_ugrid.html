@@ -81,7 +81,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-571acde573a3a9828925b70c56ca5ce3.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-351285e4f36a746a233153dc098ffc69.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -192,11 +192,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>  
         <li>
     <a class="dropdown-item" href="../adr/0003-no-bed-level-in-the-net-file.html">
- <span class="dropdown-text">No bed level in the net file; the bed level goes in as samples</span></a>
+ <span class="dropdown-text">No bed level in the net file written by write_ugrid</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="../adr/0004-no-holes-meshkernel-closes.html">
  <span class="dropdown-text">No holes that MeshKernel closes: small water areas keep their cells</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../adr/0005-bed-level-after-the-last-meshkernel-rebuild.html">
+ <span class="dropdown-text">Bed level per cell, after the last MeshKernel rebuild</span></a>
   </li>  
     </ul>
   </li>
@@ -281,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="notes" class="level2 doc-section doc-section-notes">
 <h2 class="doc-section doc-section-notes anchored" data-anchor-id="notes">Notes</h2>
-<p>The structure is that of the D-HYDRO mesh generator export: the <code>Mesh2d</code> topology with nodes, edges and faces, edge and face coordinates and face bounds. There is no bed level (<code>Mesh2d_node_z</code>, <code>Mesh2d_face_z</code>): give it to D-Flow FM as samples in the field file. A placeholder bed level would outlive a MeshKernel clip in hydrolib and break saving the model, and the D-HYDRO GUI rejects a bed level per cell once it rebuilds the cells (ADR-0003). A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a mesh without CRS gets no CRS variable.</p>
+<p>The structure is that of the D-HYDRO mesh generator export: the <code>Mesh2d</code> topology with nodes, edges and faces, edge and face coordinates and face bounds. There is no bed level (<code>Mesh2d_node_z</code>, <code>Mesh2d_face_z</code>): a placeholder would outlive a MeshKernel clip in hydrolib and break saving the model (ADR-0003). Give the bed level per cell in the model, after MeshKernel has built the cells for the last time (ADR-0005). A mesh with CRS EPSG:28992 gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same attributes derived with pyproj; a mesh without CRS gets no CRS variable.</p>
 
 
 </section>
