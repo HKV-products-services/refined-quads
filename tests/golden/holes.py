@@ -2,7 +2,7 @@
 
 hydrolib (``mesh2d_from_netcdf``) and the D-HYDRO GUI give MeshKernel only nodes and
 edges; MeshKernel then finds the cells itself and also makes a cell of a small hole
-(issue 20, ADR-0004). This is a test-side implementation, independent of the package.
+(issue 20). This is a test-side implementation, independent of the package.
 """
 
 import meshkernel as mk

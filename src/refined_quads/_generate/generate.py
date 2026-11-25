@@ -56,8 +56,7 @@ def generate(
         step from coarse to fine: the first value is for the step from level 0 to 1.
         One value per level step, or a single value for every step; each at least 0.
         With 0 only the cells touching a finer area get its level and the 2:1 balance
-        makes the transition. The old generator (meshgen) counted 0 as 1: its
-        ``buffer_rows`` 0 is 1 here.
+        makes the transition.
     water_areas : iterable of shapely geometry, Areas or GeoDataFrame
         Polygons where no cells are kept, because the 1D network carries the flow
         there. Giving water areas applies them.

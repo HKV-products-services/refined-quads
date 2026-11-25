@@ -1,4 +1,4 @@
-"""Refine an existing refined quad mesh with new refinement areas (ADR-0001)."""
+"""Refine an existing refined quad mesh with new refinement areas."""
 
 from __future__ import annotations
 

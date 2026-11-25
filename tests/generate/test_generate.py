@@ -27,7 +27,7 @@ def test_generate_gives_the_cells_of_the_golden_master(scenario):
 
     master = load_master(MASTERS_DIR / f"{scenario.name}.npz").to_mesh()
     if closable_holes(master):
-        # Issue 20 / ADR-0004: holes MeshKernel would close keep their cells.
+        # Issue 20: holes MeshKernel would close keep their cells.
         assert_master_with_holes_filled(mesh, master)
     else:
         assert_same_cells(mesh, master)

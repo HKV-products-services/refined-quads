@@ -47,7 +47,7 @@ def test_generate(benchmark, name):
     )
 
     master = load_master(MASTERS_DIR / f"{name}.npz").to_mesh()
-    if closable_holes(master):  # issue 20 / ADR-0004
+    if closable_holes(master):  # issue 20
         assert_master_with_holes_filled(mesh, master)
     else:
         assert_same_cells(mesh, master)

@@ -55,31 +55,18 @@ with netCDF4.Dataset(workdir / "mesh_net.nc") as ds:
 
 ## Bed levels
 
-The net file of `write_ugrid` has no bed level. Give it per cell after the mesh is in
-the model, as `mesh2d_face_z` in the model's net file, with `bedLevType = 1`; no sample
-file is needed. One rule makes this work in the D-HYDRO GUI as well
-([ADR-0005](../adr/0005-bed-level-after-the-last-meshkernel-rebuild.qmd)):
+The net file has no bed level. Give it per cell in the model (`mesh2d_face_z`,
+`bedLevType = 1`), on the cells of one last MeshKernel rebuild after all changes to the
+mesh, and change nothing afterwards.
 
-> **The cells in the net file must be exactly the cells MeshKernel builds from its
-> nodes and edges.** So: rebuild the cells with MeshKernel once more after the last
-> change to the mesh, give the bed level to those cells, and change nothing afterwards.
-
-The D-HYDRO GUI, like hydrolib's `mesh2d_from_netcdf`, does not take the cells from the
-net file: it builds them again from the nodes and edges, and MeshKernel also makes a
-cell of a small hole (a ring of at most six nodes). A bed level per cell only fits when
-the file already holds those cells, in that order. Otherwise the GUI stops with "number
-of values is not equal to multiple of all argument values" — or, with the same number
-of cells in another order, puts the levels on the wrong cells.
+The D-HYDRO GUI builds the cells again from nodes and edges. A level per cell only fits
+when the net file holds exactly those cells, in that order.
 
 ::: {.callout-note title="What MeshKernel does with the cells"}
-MeshKernel keeps nodes and edges, not cells, and finds the cells again each time it
-builds them. Cells can **appear**: a small hole (a ring of at most six nodes) becomes a
-cell, and a single cell a clip removed can come back. Cells can also **disappear**: a ring
-MeshKernel does not take for a cell (more than six nodes) is no cell after the rebuild.
-The model therefore holds the cells of the last rebuild, which can differ from the mesh
-refined-quads made. `generate` and `refine` leave no holes themselves
-([ADR-0004](../adr/0004-no-holes-meshkernel-closes.qmd)), but a clip in the model build
-can.
+MeshKernel keeps nodes and edges and finds the cells again each time it builds them.
+A small hole (at most six nodes) then becomes a cell, and a cell a clip removed can come
+back. A ring of more than six nodes is no cell after the rebuild. The model therefore
+holds the cells of the last rebuild, which can differ from the mesh refined-quads made.
 :::
 
 ### With D-HyDAMO
@@ -102,32 +89,24 @@ net_file = Path(output_path) / "refined_quads_net.nc"
 refined_quads.write_ugrid(quad_mesh, net_file)
 
 network = fm.geometry.netfile.network
-mesh.mesh2d_from_netcdf(network, net_file)  # MeshKernel builds the cells
+mesh.mesh2d_from_netcdf(network, net_file)
 
-# Other changes to the mesh (mesh2d_clip, branch clips, ...) go here, never later.
+# Other changes to the mesh (clips) go here, never later.
 
-# The last MeshKernel rebuild: the cells as the D-HYDRO GUI will build them.
+# The last MeshKernel rebuild
 m2d = network._mesh2d
 built = m2d.get_mesh2d()
 m2d._set_mesh2d(node_x=built.node_x, node_y=built.node_y, edge_nodes=built.edge_nodes)
 
 mesh.mesh2d_altitude_from_raster(network, rasterpath, "face", "mean", fill_option="nearest")
 fm.geometry.bedlevtype = 1
-
-# 1D2D links do not change the cells; then dimr.save(recurse=True)
 ```
 
-Do not call the mesh `mesh`: that name is the D-HyDAMO module (see the warning at the
-top). A clip after the last rebuild breaks the rule: on the Geul model a branch clip
-removed one cell after the first rebuild, the hole it left became a cell again in a new
-rebuild, and the net file had one cell fewer than the GUI would build. With the rebuild
-after the clip the cell is simply there, as it is in the GUI.
+1D2D links do not change the cells. A cell a clip removes after the last rebuild leaves
+a hole that the GUI fills, and the net file then has one cell too few.
 
-`fill_option="nearest"` gives a cell without raster values the value of the nearest
-cell; with `fill_value=-999` it would get -999 as its bed level.
-
-**Check before opening the model.** Read the saved net file again as hydrolib and the
-GUI do; the cells must be the same, in the same order:
+Before opening the model, read the saved net file again. The cells must be the same, in
+the same order:
 
 ```python
 import netCDF4
@@ -140,25 +119,19 @@ with netCDF4.Dataset(net) as ds:
     face_x, face_y = ds["mesh2d_face_x"][:], ds["mesh2d_face_y"][:]
 rebuilt = Network()
 UgridReader(net).read_mesh2d(rebuilt._mesh2d)
-assert len(rebuilt._mesh2d.mesh2d_face_x) == len(face_x), "MeshKernel builds other cells"
-assert np.allclose(rebuilt._mesh2d.mesh2d_face_x, face_x), "cells in another order"
-assert np.allclose(rebuilt._mesh2d.mesh2d_face_y, face_y), "cells in another order"
+assert len(rebuilt._mesh2d.mesh2d_face_x) == len(face_x), "other cells"
+assert np.allclose(rebuilt._mesh2d.mesh2d_face_x, face_x), "other order"
+assert np.allclose(rebuilt._mesh2d.mesh2d_face_y, face_y), "other order"
 ```
-
-Tested on the Geul model (277,208 cells, D-HYDRO Suite 2026.02): the check passes, the
-model loads in the GUI with the right bed levels, and D-Flow FM uses the level of every
-cell exactly.
 
 ### Bed level on the nodes
 
-To give the bed level on the nodes instead (`bedLevType` 3 to 6), sample the raster on
-the nodes after the last MeshKernel rebuild; it is written as `mesh2d_node_z`:
+For `bedLevType` 3 to 6, sample the raster on the nodes after the last rebuild:
 
 ```python
 import types
 
-# hydrolib fills NaN's (nodes on the edge, partly outside the raster) in place, but
-# pandas 3 returns read-only arrays: let the raster statistics return writable copies
+# pandas 3 returns read-only arrays, which hydrolib fills in place: use writable copies
 _stats = mesh.rasterstats.raster_stats_fine_cells
 if not getattr(_stats, "_writable", False):
     def _writable_stats(*args, **kwargs):
@@ -171,34 +144,25 @@ mesh.mesh2d_altitude_from_raster(network, rasterpath, "node", "mean", fill_optio
 fm.geometry.bedlevtype = 3  # 3 mean, 4 minimum, 5 maximum of the node values
 ```
 
-Tested with D-Flow FM 2026.02: every cell gets a bed level between the lowest and the
-highest of its node values. Not yet tested in the D-HYDRO GUI.
-
 ### Which bedLevType
 
-"Face" means two opposite things here. In the net file (UGRID 1.0) a face is a **cell**:
-`mesh2d_face_z` is a level per cell. In the description of `bedLevType` in the MDU,
-"at face" means at a **cell side** through which water flows (a flow link or u-point),
-the finite-volume meaning. This table uses cell, cell side and node only.
+In the net file a "face" is a cell. In the MDU, "at face" means at a cell side (a flow
+link). The table uses cell, cell side and node.
 
 | `bedLevType` | Input | Level of a cell side | Bed level of the cell |
 | --- | --- | --- | --- |
-| 1 | per cell: `mesh2d_face_z` | not measured (MDU: the higher of the two cells) | the cell's own value |
-| 2 | per cell side: samples | the sample | not measured |
-| 3 | per node: `mesh2d_node_z` | mean of its two nodes | the lowest of its cell sides |
-| 4 | per node | the lower of its two nodes | the lowest of its cell sides, so its lowest node |
-| 5 | per node | the higher of its two nodes | the lowest of its cell sides |
-| 6 | per node | not measured | mean of its nodes |
+| 1 | per cell: `mesh2d_face_z` | the higher of the two cells | its own value |
+| 2 | per cell side: samples | the sample | |
+| 3 | per node: `mesh2d_node_z` | mean of its two nodes | lowest of its cell sides |
+| 4 | per node | lower of its two nodes | lowest of its cell sides, so its lowest node |
+| 5 | per node | higher of its two nodes | lowest of its cell sides |
+| 6 | per node | | mean of its nodes |
 
-Only cell sides shared with another cell count; sides on the edge of the mesh do not.
-The cell formulas were measured with D-Flow FM 2026.02 on a mesh of 849 cells: each
-matches the bed level D-Flow FM uses in every cell to 0.1 mm. In short: 1 gives each
-cell exactly its own value; 6 the mean of its nodes; 4 its lowest node; with 3 and 5 one
-low cell side makes the whole cell low.
+Only cell sides shared with another cell count.
 
 ::: {.callout-tip title="GeoTIFF fields in the D-HYDRO GUI"}
-The GUI only reads rasters with the extension `.tif` (or `.asc`); with `.tiff` it stops
-at "reading spatial operations". D-Flow FM and DIMR read both.
+The GUI only reads rasters with the extension `.tif` (or `.asc`); with `.tiff` it hangs
+at "reading spatial operations".
 :::
 
 ## Read a net file

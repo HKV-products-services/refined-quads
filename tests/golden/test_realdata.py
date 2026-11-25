@@ -1,4 +1,4 @@
-"""Checks on real-data masters (Geul, Parkstad) recorded locally with ``record.py --realdata``.
+"""Checks on real-data masters recorded locally with ``record.py --realdata``.
 
 They run with ``-m realdata`` and skip unless ``REFINED_QUADS_REALDATA`` points to the
 directory with the recorded ``.npz`` files.

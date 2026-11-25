@@ -68,7 +68,7 @@ class MeshReport:
         nodes and edges, as hydrolib (``mesh2d_from_netcdf``) and the D-HYDRO GUI do: a
         ring of at most six nodes around no cell. Information only: a hole of four
         nodes becomes an ordinary cell, but one of five or six nodes can be a cell
-        D-Flow FM rejects as not orthogonal (ADR-0004).
+        D-Flow FM rejects as not orthogonal.
     """
 
     lattice: Lattice

@@ -79,8 +79,7 @@ The test that decides whether a cell touching a water area (or a hole in the dom
 is removed from the finished mesh: by its circumcentre, only when fully inside, or as
 soon as it touches; applied cell by cell with MeshKernel, as in the model workflow, so
 the remaining small cells follow the water's edge. Exception: cells whose removal would
-leave a hole that MeshKernel makes one cell of (a ring of at most six nodes) stay
-(ADR-0004).
+leave a hole that MeshKernel makes one cell of (a ring of at most six nodes) stay.
 _Avoid_: delete option, clip method
 
 **Closable hole**:

@@ -16,7 +16,7 @@ from refined_quads import InputError, Mesh, check, read_ugrid, write_ugrid
 WITH_BASE_CELL = [[(-4, 0), (0, 0), (0, 4), (-4, 4)], *CLEAN]
 LEGACY_FILE = MASTERS_DIR.parent / "ugrid" / "domain_with_hole_legacy.nc"
 PROVENANCE = {"source", "history"}  # global attributes that name the writer and the time
-# The old writer wrote -999 bed levels; write_ugrid leaves them out (ADR-0003).
+# The old writer wrote -999 bed levels; write_ugrid leaves them out.
 BED_LEVELS = {"Mesh2d_node_z", "Mesh2d_face_z"}
 
 
@@ -73,7 +73,7 @@ def test_file_of_the_old_writer_reads_as_its_golden_master():
 
 def test_no_bed_level_is_written(tmp_path):
     # A -999 node_z outlives a MeshKernel clip in hydrolib and breaks saving the model, and
-    # the D-HYDRO GUI rejects a per-cell face_z once it rebuilds the cells (ADR-0003).
+    # the D-HYDRO GUI rejects a per-cell face_z once it rebuilds the cells.
     path = tmp_path / "mesh.nc"
     write_ugrid(rd_master("l_shaped_domain"), path)
 

@@ -79,9 +79,9 @@ def write_ugrid(mesh: Mesh, path: str | os.PathLike[str]) -> None:
     The structure is that of the D-HYDRO mesh generator export: the ``Mesh2d``
     topology with nodes, edges and faces, edge and face coordinates and face bounds.
     There is no bed level (``Mesh2d_node_z``, ``Mesh2d_face_z``): a placeholder would
-    outlive a MeshKernel clip in hydrolib and break saving the model (ADR-0003). Give
-    the bed level per cell in the model, after MeshKernel has built the cells for the
-    last time (ADR-0005). A mesh with CRS EPSG:28992
+    outlive a MeshKernel clip in hydrolib and break saving the model. Give the bed
+    level per cell in the model, after MeshKernel has built the cells for the last
+    time. A mesh with CRS EPSG:28992
     gets exactly the CRS attributes of the D-Flow FM plugin; another CRS gets the same
     attributes derived with pyproj; a mesh without CRS gets no CRS variable.
     """

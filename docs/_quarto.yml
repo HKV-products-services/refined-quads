@@ -7,7 +7,6 @@ project:
     - "tutorial/"
     - "how-to/"
     - "explanation/"
-    - "adr/"
     - "reference/"
   # Code cells run in docs/, so `snippets/` is importable from every page.
   execute-dir: project
@@ -33,13 +32,6 @@ website:
           - explanation/refined-quad-mesh.qmd
           - explanation/orthogonality.qmd
           - explanation/refine.qmd
-          - text: "---"
-          - adr/index.qmd
-          - adr/0001-refine-from-existing-mesh.qmd
-          - adr/0002-output-contract-same-cells.qmd
-          - adr/0003-no-bed-level-in-the-net-file.qmd
-          - adr/0004-no-holes-meshkernel-closes.qmd
-          - adr/0005-bed-level-after-the-last-meshkernel-rebuild.qmd
       - text: "Python API"
         file: reference/index.qmd
     right:

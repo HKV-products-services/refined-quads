@@ -88,16 +88,16 @@ print(svg(quad_mesh, areas=list(areas.geometries), water=list(water.geometries))
 
 ## Rules
 
-- **Layer name.** A file with one layer needs no name; with several layers the name is
-  required, otherwise you get an error that lists the layers.
-- **Level.** `level` is the name of a column with the refinement level per polygon, or
-  one integer for the whole layer (`level=3`). A missing or invalid level (0, a negative
-  number, 2.5, empty) raises an error that names the feature.
-- **Domain.** All polygons of the domain layer are merged into one (multi)polygon.
-- **CRS.** The mesh gets the CRS of the domain. Other layers are transformed to it. A
-  layer without CRS raises an error unless you pass `crs=` for it; a geographic CRS
-  (degrees) for the domain raises an error, as cell sizes must be in metres.
-- **GeoDataFrame.** Instead of a path you may pass a GeoDataFrame (or any object with
-  `geometry` and `crs` attributes): `read_refinement_areas(frame, level="refinement")`.
-- **Shapely geometries.** Plain shapely geometries have no CRS: pass `crs=` to
-  `generate` (see the [tutorial](../tutorial/first-mesh.qmd)).
+- A file with one layer needs no layer name. With several layers the name is required;
+  without it you get an error that lists the layers.
+- `level` is the name of a column with the refinement level per polygon, or one integer
+  for the whole layer (`level=3`). A missing or invalid level (0, a negative number, 2.5,
+  empty) raises an error that names the feature.
+- All polygons of the domain layer are merged into one (multi)polygon.
+- The mesh gets the CRS of the domain, and other layers are transformed to it. A layer
+  without CRS raises an error unless you pass `crs=` for it. A geographic CRS (degrees)
+  for the domain raises an error, as cell sizes must be in metres.
+- Instead of a path you may pass a GeoDataFrame, or any object with `geometry` and `crs`
+  attributes: `read_refinement_areas(frame, level="refinement")`.
+- Plain shapely geometries have no CRS: pass `crs=` to `generate` (see the
+  [tutorial](../tutorial/first-mesh.qmd)).

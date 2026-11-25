@@ -1,4 +1,4 @@
-"""Storage of golden-master meshes as integer lattice indices (ADR-0002).
+"""Storage of golden-master meshes as integer lattice indices.
 
 A master is a compact ``.npz`` with the lattice (``origin``, ``cell_size``,
 ``levels``), the nodes as integer indices in units of ``cell_size / 2**levels`` from
@@ -20,7 +20,7 @@ from refined_quads import Lattice, Mesh
 
 MASTERS_DIR = Path(__file__).parent / "masters"
 RUNTIME_BASELINE = Path(__file__).parent / "runtime_baseline.json"
-#: Directory with real-data masters (Geul, Parkstad); they stay outside the repository.
+#: Directory with real-data masters; they stay outside the repository.
 REALDATA_ENV = "REFINED_QUADS_REALDATA"
 
 

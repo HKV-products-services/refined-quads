@@ -1,4 +1,4 @@
-"""Record golden-master meshes with the generator of qgis_dhydamo 9a324bc (ADR-0002).
+"""Record golden-master meshes with the generator of qgis_dhydamo 9a324bc.
 
 The generator is read straight from the Git objects of a qgis_dhydamo clone, so the
 state of its working tree does not matter. It needs only numpy and shapely.
@@ -12,7 +12,7 @@ together with a runtime baseline per scenario in ``runtime_baseline.json``::
 ``tests/golden/ugrid``, the reference for the structure and attributes of ``write_ugrid``.
 
 Existing masters are never overwritten unless ``--rerecord`` is given; an intended
-change of a master needs a changelog entry. Real-data scenarios (Geul, Parkstad) stay
+change of a master needs a changelog entry. Real-data scenarios stay
 outside the repository: describe them in a TOML manifest and record them into the
 directory that ``REFINED_QUADS_REALDATA`` points to::
 

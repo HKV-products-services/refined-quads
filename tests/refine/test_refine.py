@@ -243,7 +243,7 @@ def test_areas_with_a_crs_need_a_mesh_with_a_crs():
 
 
 def test_refine_keeps_the_cells_of_a_small_water_area_meshkernel_would_close():
-    # Issue 20 / ADR-0004: water over two adjacent 8 m cells would leave a hole of six
+    # Issue 20: water over two adjacent 8 m cells would leave a hole of six
     # nodes that hydrolib and the D-HYDRO GUI make one (hexagonal) cell of.
     mesh = generate_rd(box(X0, Y0, X0 + 320, Y0 + 256), cell_size=32.0)
     ox, oy = mesh.lattice.origin

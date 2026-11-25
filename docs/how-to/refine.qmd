@@ -2,10 +2,9 @@
 title: "Refine an existing mesh"
 ---
 
-`refine` makes an existing mesh finer in new refinement areas. It needs only the mesh:
-not the input it was generated with, and not even a mesh made by this package. Cells
-outside the affected area stay exactly as they are, nodes included, so the rest of the
-model is untouched.
+`refine` makes an existing mesh finer in new refinement areas. It needs only the mesh,
+which may come from another program. Cells outside the affected area keep their nodes
+and coordinates exactly.
 
 ```{python}
 #| echo: false
@@ -110,7 +109,7 @@ exits with 2 and writes `model_v2_net_recognition.gpkg` with the problem locatio
 
 ## Domain and water areas
 
-You may pass a domain and water areas to `refine` (or put them in the TOML file). They
-only remove **new** cells: existing cells stay. The domain's holes are clipped like water.
-The mesh never grows: new cells only replace existing ones, inside the footprint of the
-mesh. See [Why refine starts from the mesh](../explanation/refine.qmd).
+You may pass a domain and water areas to `refine`, or put them in the TOML file. They
+only remove new cells, and the domain's holes are clipped like water. New cells only
+replace existing ones, inside the footprint of the mesh, so the mesh never grows. See
+[Why refine starts from the mesh](../explanation/refine.qmd).

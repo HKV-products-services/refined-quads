@@ -123,7 +123,7 @@ class Mesh:
     Notes
     -----
     The arrays are stored as read-only copies. Two meshes are compared on their
-    cells, not with ``==``; see ``docs/adr/0002-output-contract-same-cells.qmd``.
+    cells, not with ``==``.
     """
 
     nodes: NDArray[np.float64]

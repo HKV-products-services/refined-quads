@@ -106,9 +106,7 @@ The version comes from Git tags (`v0.1.0` → `0.1.0`). Publishing a GitHub rele
 uploads the package to PyPI.
 
 Domain terms are defined in
-[CONTEXT.md](https://github.com/HKV-products-services/refined-quads/blob/main/CONTEXT.md);
-architectural decisions are in
-[docs/adr/](https://github.com/HKV-products-services/refined-quads/tree/main/docs/adr).
+[CONTEXT.md](https://github.com/HKV-products-services/refined-quads/blob/main/CONTEXT.md).
 
 ## Licence
 

@@ -49,13 +49,13 @@ The package is under construction. The API described here is not stable yet.
 
 ## What it does
 
-- **Generate** a mesh over a domain with refinement areas, transition rows and water
-  areas, in Python or from a TOML file on the command line.
-- **Refine** an existing mesh — also one made by another program — with new refinement
-  areas, without its original input; cells that do not change stay exactly as they are.
-- **Check** a mesh for the properties D-Flow FM and refining rely on: no hanging nodes,
-  2:1 balance and FM orthogonality.
-- **Read and write** UGRID net files that D-HYDRO and D-Flow FM use.
+- Generate a mesh over a domain with refinement areas, transition rows and water areas,
+  in Python or from a TOML file on the command line.
+- Refine an existing mesh, also one made by another program, with new refinement areas.
+  The original input is not needed, and cells that do not change stay exactly as they
+  are.
+- Check a mesh for hanging nodes, 2:1 balance and FM orthogonality.
+- Read and write the UGRID net files that D-HYDRO and D-Flow FM use.
 
 ## Install
 
@@ -69,13 +69,13 @@ Or, in a uv project, use `uv add refined-quads`.
 
 Its dependencies (numpy, shapely, netCDF4, pyogrio, pyproj and meshkernel) all come as
 wheels; no separate GDAL installation is needed. On macOS the meshkernel wheel needs
-OpenMP from Homebrew (`brew install libomp`); the package is tested on Windows and Linux.
+OpenMP from Homebrew (`brew install libomp`); the package runs on Windows and Linux.
 
 ## Where to go next
 
 - [Your first mesh](tutorial/first-mesh.qmd) walks through generating, checking and
   writing a mesh.
-- The **how-to guides** cover GIS layers, TOML files and the command line, water areas,
+- The how-to guides cover GIS layers, TOML files and the command line, water areas,
   refining and D-HYDRO.
-- The **explanation** pages describe the concepts and the decisions behind the design.
+- The explanation pages describe the concepts.
 - The [API reference](reference/index.qmd) documents every public function.

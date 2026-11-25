@@ -11,7 +11,7 @@ calling MeshKernel itself.
 A small hole can still remain: MeshKernel leaves it open here, but every program that
 builds the cells from nodes and edges with MeshKernel (hydrolib's ``mesh2d_from_netcdf``,
 the D-HYDRO GUI) makes it one cell, often a hexagon that D-Flow FM rejects as not
-orthogonal. Such holes keep their cells (ADR-0004).
+orthogonal. Such holes keep their cells.
 """
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ def closable_holes(
 def _keep_closable_holes(
     vertices: NDArray[np.float64], cells: list[list[int]], clipped: list[list[int]]
 ) -> list[list[int]]:
-    """Give back the deleted cells MeshKernel makes one cell of (ADR-0004).
+    """Give back the deleted cells MeshKernel makes one cell of.
 
     Two cases, both a region of deleted cells inside a ring of at most six nodes:
 

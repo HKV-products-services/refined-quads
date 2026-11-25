@@ -1,4 +1,4 @@
-"""Cells MeshKernel would merge after the water clip keep their own cells (issue 20, ADR-0004)."""
+"""Cells MeshKernel would merge after the water clip keep their own cells (issue 20)."""
 
 import numpy as np
 
@@ -36,7 +36,7 @@ def test_a_hole_meshkernel_would_close_gets_its_cells_back():
 
 
 def test_a_cell_meshkernel_merged_is_replaced_by_its_cells():
-    # MeshKernel can also return the two deleted squares as one hexagon (Geul, 2026-11-12).
+    # MeshKernel can also return the two deleted squares as one hexagon.
     hexagon = [6, 7, 8, 13, 12, 11]
     result = _keep_closable_holes(VERTICES, GRID, [list(c) for c in REST] + [hexagon])
 

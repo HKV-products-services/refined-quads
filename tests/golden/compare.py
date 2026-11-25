@@ -1,4 +1,4 @@
-"""Compare meshes on their cells as integer lattice indices (ADR-0002).
+"""Compare meshes on their cells as integer lattice indices.
 
 Two meshes are the same when they contain the same set of cells, every node taken as
 an integer lattice index normalised to the finest level of both meshes. Cell order,

@@ -178,7 +178,7 @@ def test_partly_filled_lattice_square_is_recognised():
 
 @pytest.mark.parametrize("name", [s.name for s in SCENARIOS])
 def test_check_reports_the_holes_meshkernel_closes(name):
-    # Issue 20 / ADR-0004: compared with a full MeshKernel round trip (golden.holes).
+    # Issue 20: compared with a full MeshKernel round trip (golden.holes).
     master = load_master(MASTERS_DIR / f"{name}.npz").to_mesh()
 
     report = check(master)

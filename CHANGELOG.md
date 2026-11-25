@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/). Any intended change to the cells a given
-input produces is at least a minor version (see `docs/adr/0002-output-contract-same-cells.qmd`).
+input produces is at least a minor version.
 
 ## [Unreleased]
 
@@ -11,9 +11,8 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 - Use the mesh in D-HYDRO: the bed level goes in per cell (`mesh2d_face_z`,
   `bedLevType = 1`) on the cells of one last MeshKernel rebuild after all changes to the
-  mesh, with a check that a saved net file gives the same cells when read again
-  (ADR-0005). The route with a sample file (`bodem_2d.xyz` and two `[Initial]` blocks)
-  is removed. Tested on the Geul model in D-Flow FM and the D-HYDRO GUI.
+  mesh, with a check that a saved net file gives the same cells when read again. The route with a sample file (`bodem_2d.xyz` and two `[Initial]` blocks)
+  is removed.
 
 ## [0.4.0] - 2026-11-13
 
@@ -29,7 +28,7 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 
 ### Changed
 
-- Intended output change (ADR-0004): `generate` and `refine` no longer leave a hole
+- Intended output change: `generate` and `refine` no longer leave a hole
   that MeshKernel makes one cell of (a ring of at most six nodes). A water area that
   would remove only one or two cells keeps them; a cell that MeshKernel's clip merges
   from removed cells is replaced by those cells. hydrolib's `mesh2d_from_netcdf` and the
@@ -49,10 +48,9 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
 - `write_ugrid` no longer writes `Mesh2d_node_z` and `Mesh2d_face_z` (-999 for every node
   and face). After a MeshKernel clip in hydrolib the -999 `mesh2d_node_z` kept its old
   length and saving the model failed with a shape mismatch; the D-HYDRO GUI rejects a bed
-  level per cell once it rebuilds the cells (ADR-0003). The cells are unchanged.
+  level per cell once it rebuilds the cells. The cells are unchanged.
 - Use the mesh in D-HYDRO: the bed level as samples (`bodem_2d.xyz` with two `[Initial]`
-  blocks), with the steps for a D-HyDAMO model build; tested on the Geul model in D-Flow
-  FM and the D-HYDRO GUI (D-HYDRO Suite 2026.02). Also the bed level on the nodes
+  blocks), with the steps for a D-HyDAMO model build. Also the bed level on the nodes
   (`mesh2d_node_z`, `bedLevType` 3 to 6) via D-HyDAMO.
 
 ## [0.1.1] - 2026-11-12
@@ -119,7 +117,7 @@ input produces is at least a minor version (see `docs/adr/0002-output-contract-s
   field `orth_e`, -1 for a degenerate edge) in the CRS of the mesh and exits with 1; a
   failure to write them is reported without hiding the repair error.
 - `refine(mesh, refinement_areas, ...) -> RefineResult`: refine an existing mesh
-  without its original input (ADR-0001). The lattice squares are recognised from the
+  without its original input. The lattice squares are recognised from the
   cells, the new areas applied, the 2:1 balance restored where needed; squares that do
   not change keep their cells and nodes exactly, the mesh never grows beyond its
   footprint, and a domain or water areas only remove new cells. `RefineResult` has the

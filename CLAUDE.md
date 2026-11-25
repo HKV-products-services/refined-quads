@@ -9,7 +9,7 @@ Plan: `.scratch/issues/refined-quads/PRD.md` and the issues next to it.
 
 - Everything in English: code, docstrings (numpy style), error and log messages, docs.
   Conversation with the user may be in Dutch.
-- Output contract (ADR-0002): the same input gives the same cells as the generator at
+- Output contract: the same input gives the same cells as the generator at
   qgis_dhydamo `9a324bc`, compared on integer lattice indices; cell and node order are
   free. Golden masters guard this; an intended output change is at least a minor
   version with a CHANGELOG entry.
@@ -55,4 +55,4 @@ Default labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-huma
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` at the root, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+Single-context: `CONTEXT.md` at the root; no ADRs. See `docs/agents/domain.md`.

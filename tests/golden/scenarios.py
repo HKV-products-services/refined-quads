@@ -1,4 +1,4 @@
-"""Synthetic golden-master scenarios (ADR-0002).
+"""Synthetic golden-master scenarios.
 
 Each scenario is input in the terms of this package: transition rows per step from
 coarse to fine and at least 1, the highest refinement level following from the
@@ -85,7 +85,7 @@ def _domain_with_hole():
 
 
 def _small_water_areas(n=60, seed=20261028):
-    """Many small ponds and ditches, partly smaller than a base cell (Parkstad situation)."""
+    """Many small ponds and ditches, partly smaller than a base cell."""
     rng = np.random.default_rng(seed)
     areas = []
     for _ in range(n):

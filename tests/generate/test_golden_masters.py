@@ -1,4 +1,4 @@
-"""Golden masters of the generator at qgis_dhydamo 9a324bc (ADR-0002)."""
+"""Golden masters of the generator at qgis_dhydamo 9a324bc."""
 
 import numpy as np
 import pytest
