@@ -32,4 +32,3 @@ de woordenlijst juist vermijdt.
 
 Staat het begrip er nog niet in, dan is dat een signaal: je verzint taal die het project
 niet gebruikt (heroverweeg dat), of er is een echt gat (noteer het voor `/grill-with-docs`).
-

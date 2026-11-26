@@ -65,8 +65,7 @@ print(
 ```
 
 MeshKernel keeps nodes and edges and derives the cells from them again, so a single
-removed cell whose neighbours all remain comes back. Give the bed level after the last
-MeshKernel rebuild (see [Use the mesh in D-HYDRO](d-hydro.qmd)).
+removed cell whose neighbours all remain comes back. Assign bed levels after all changes to the mesh (see [Use the mesh in D-HYDRO](d-hydro.qmd)).
 
 ## Small water areas stay cells
 

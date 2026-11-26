@@ -23,13 +23,6 @@ quad_mesh = generate(
 )
 ```
 
-::: {.callout-warning title="Do not call it `mesh` next to D-HyDAMO"}
-D-HyDAMO scripts usually import `from hydrolib.dhydamo.geometry import mesh` (the module
-with `mesh2d_clip`, `links1d2d_add_links_1d_to_2d` and so on). `mesh = generate(...)`
-replaces that module, and the next `mesh.<function>(...)` fails with an
-`AttributeError`. Use another name, such as `quad_mesh` in the examples here.
-:::
-
 ## Write a net file
 
 ```{python}
@@ -55,19 +48,7 @@ with netCDF4.Dataset(workdir / "mesh_net.nc") as ds:
 
 ## Bed levels
 
-The net file has no bed level. Give it per cell in the model (`mesh2d_face_z`,
-`bedLevType = 1`), on the cells of one last MeshKernel rebuild after all changes to the
-mesh, and change nothing afterwards.
-
-The D-HYDRO GUI builds the cells again from nodes and edges. A level per cell only fits
-when the net file holds exactly those cells, in that order.
-
-::: {.callout-note title="What MeshKernel does with the cells"}
-MeshKernel keeps nodes and edges and finds the cells again each time it builds them.
-A small hole (at most six nodes) then becomes a cell, and a cell a clip removed can come
-back. A ring of more than six nodes is no cell after the rebuild. The model therefore
-holds the cells of the last rebuild, which can differ from the mesh refined-quads made.
-:::
+The net file contains the mesh geometry. Use D-HyDAMO to add bed levels from a raster.
 
 ### With D-HyDAMO
 
@@ -91,57 +72,21 @@ refined_quads.write_ugrid(quad_mesh, net_file)
 network = fm.geometry.netfile.network
 mesh.mesh2d_from_netcdf(network, net_file)
 
-# Other changes to the mesh (clips) go here, never later.
-
-# The last MeshKernel rebuild
-m2d = network._mesh2d
-built = m2d.get_mesh2d()
-m2d._set_mesh2d(node_x=built.node_x, node_y=built.node_y, edge_nodes=built.edge_nodes)
-
-mesh.mesh2d_altitude_from_raster(network, rasterpath, "face", "mean", fill_option="nearest")
+mesh.mesh2d_altitude_from_raster(network, rasterpath, "face", "mean", fill_value=-999)
 fm.geometry.bedlevtype = 1
 ```
 
-1D2D links do not change the cells. A cell a clip removes after the last rebuild leaves
-a hole that the GUI fills, and the net file then has one cell too few.
+Use `quad_mesh` as the variable name so that `mesh` still refers to the D-HyDAMO module.
+Complete any clipping or refinement before assigning bed levels.
 
-Before opening the model, read the saved net file again. The cells must be the same, in
-the same order:
+### Bed levels on nodes
 
-```python
-import netCDF4
-import numpy as np
-from hydrolib.core.dflowfm.net.models import Network
-from hydrolib.core.dflowfm.net.reader import UgridReader
-
-net = Path(output_path) / "dflowfm" / "network.nc"
-with netCDF4.Dataset(net) as ds:
-    face_x, face_y = ds["mesh2d_face_x"][:], ds["mesh2d_face_y"][:]
-rebuilt = Network()
-UgridReader(net).read_mesh2d(rebuilt._mesh2d)
-assert len(rebuilt._mesh2d.mesh2d_face_x) == len(face_x), "other cells"
-assert np.allclose(rebuilt._mesh2d.mesh2d_face_x, face_x), "other order"
-assert np.allclose(rebuilt._mesh2d.mesh2d_face_y, face_y), "other order"
-```
-
-### Bed level on the nodes
-
-For `bedLevType` 3 to 6, sample the raster on the nodes after the last rebuild:
+To assign bed levels to nodes instead of cells, use `"node"` in the same function
+and choose a matching `bedLevType` (3 to 6), for example:
 
 ```python
-import types
-
-# pandas 3 returns read-only arrays, which hydrolib fills in place: use writable copies
-_stats = mesh.rasterstats.raster_stats_fine_cells
-if not getattr(_stats, "_writable", False):
-    def _writable_stats(*args, **kwargs):
-        df = _stats(*args, **kwargs)
-        return {c: types.SimpleNamespace(values=df[c].to_numpy(copy=True)) for c in df.columns}
-    _writable_stats._writable = True
-    mesh.rasterstats.raster_stats_fine_cells = _writable_stats
-
-mesh.mesh2d_altitude_from_raster(network, rasterpath, "node", "mean", fill_option="nearest")
-fm.geometry.bedlevtype = 3  # 3 mean, 4 minimum, 5 maximum of the node values
+mesh.mesh2d_altitude_from_raster(network, rasterpath, "node", "mean", fill_value=-999)
+fm.geometry.bedlevtype = 3
 ```
 
 ### Which bedLevType
@@ -159,11 +104,6 @@ link). The table uses cell, cell side and node.
 | 6 | per node | | mean of its nodes |
 
 Only cell sides shared with another cell count.
-
-::: {.callout-tip title="GeoTIFF fields in the D-HYDRO GUI"}
-The GUI only reads rasters with the extension `.tif` (or `.asc`); with `.tiff` it hangs
-at "reading spatial operations".
-:::
 
 ## Read a net file
 
@@ -185,3 +125,20 @@ such edges; if that does not close, `generate` raises `OrthogonalityRepairError`
 raw mesh (`exc.mesh`) and the problem locations (`exc.bad_points`), and the command line
 writes `<output>_raw.nc` and `<output>_problems.gpkg` next to the output so you can look
 at them in QGIS.
+
+## Practical restrictions
+
+- Assign bed levels after all changes to the mesh. With `"face"`, the values belong
+  to the current cells in their current order. Further clipping or rebuilding can
+  change those cells; assign the bed levels again if that happens. An extra call to
+  the private `_set_mesh2d` method is not part of the standard workflow above.
+- MeshKernel derives cells from nodes and edges. Small holes can become cells when
+  the mesh is read again. Refined-quads keeps cells where removing them would leave
+  such a hole; see [Water areas](water-areas.qmd). Additional clipping in D-HyDAMO
+  can introduce new holes.
+- `fill_value=-999` fills locations without raster data with that value. Check raster
+  coverage and choose a fill value or fill option appropriate for your model.
+- Some HYDROLIB/pandas combinations can raise a read-only-array error when filling
+  missing raster values. This is a dependency compatibility issue; check the versions
+  in your environment if it occurs.
+- For raster import in the D-HYDRO GUI, use `.tif` or `.asc`.
